@@ -1,11 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
+import '../providers/app_providers.dart';
 
-class WalletScreen extends StatelessWidget {
+class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final txAsyncValue = ref.watch(transactionsStreamProvider);
+    double totalNet = 0;
+
+    if (txAsyncValue.hasValue && txAsyncValue.value != null) {
+      for (var tx in txAsyncValue.value!) {
+        if (!tx.isDeleted) {
+          totalNet += tx.isExpense ? -tx.amount : tx.amount;
+        }
+      }
+    }
+
+    // Tạm thời giả lập phân tách: 70% ở ví chính, 30% ở ví tiết kiệm
+    final mainWalletBalance = (totalNet * 0.7).toStringAsFixed(2);
+    final savingsBalance = (totalNet * 0.3).toStringAsFixed(2);
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -23,7 +40,7 @@ class WalletScreen extends StatelessWidget {
               color2: const Color(0xFF1F4C74),
               name: 'Main Wallet',
               number: '**** **** **** 1234',
-              balance: '\$8,450.00',
+              balance: '\$$mainWalletBalance',
             ),
             const SizedBox(height: 20),
             _buildCreditCard(
@@ -32,7 +49,7 @@ class WalletScreen extends StatelessWidget {
               color2: const Color(0xFF4A00E0),
               name: 'Savings',
               number: '**** **** **** 5678',
-              balance: '\$4,000.00',
+              balance: '\$$savingsBalance',
             ),
             const SizedBox(height: 32),
             InkWell(

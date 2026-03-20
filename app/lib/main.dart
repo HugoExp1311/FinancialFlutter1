@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
-import 'presentation/screens/main_navigation_screen.dart';
+import 'presentation/screens/auth_gate.dart';
 import 'presentation/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -64,7 +64,7 @@ class FinanceApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system, // Tự động theo hệ thống
-      home: const MainNavigationScreen(),
+      home: const AuthGate(),
     );
   }
 }

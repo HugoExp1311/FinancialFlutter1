@@ -38,8 +38,13 @@ Các file được xây dựng trong thư mục `lib/presentation/`:
 Ứng dụng đã được nâng cấp từ một màn hình duy nhất thành hệ thống Super App điều hướng toàn diện (đạt chuẩn Expert CV).
 
 * **`screens/main_navigation_screen.dart`**: Khung xương điều hướng của toàn bộ hệ thống.
-  * **Chức năng**: Chứa `IndexedStack` giúp người dùng chuyển tab nhanh mà màn hình không bị tải lại từ đầu (Giữ nguyên State).
+  * **Chức năng**: Chứa `IndexedStack` giúp người dùng chuyển tab nhanh mà màn hình không bị tải lại từ đầu (Giữ nguyên State). Đồng thời tự động kích hoạt tiến trình Đồng bộ Đám mây (`syncAll`) ngay trong luồng `initState` khi người dùng vừa đăng nhập.
   * **Thiết kế Navigation Bar**: Thanh BottomAppBar tuỳ chỉnh, vát mượt mà ôm lấy nút Thêm Giao Dịch lơ lửng. Đặc biệt đã được viết đè lớp `surfaceTintColor: Colors.transparent` để khắc phục vệt ám trắng của Material 3. Các Icon tab được gắn hiệu ứng Scale chậm tạo cảm giác ấn nảy tinh tế.
+  * **AI Chatbot Button (New)**: Bố trí một nút Floating Button thứ hai ở góc phải màn hình (`Icons.smart_toy_rounded`) với màu Xanh thu nhập, sẵn sàng chờ đón Module NLP/AI.
+
+* **`screens/auth_gate.dart` & `screens/login_screen.dart`**: Trạm gác An ninh số chặn cửa.
+  * **Chức năng (`AuthGate`)**: Bộ định tuyến thông minh nghe lén luồng trạng thái xác thực `onAuthStateChange`. Nếu chưa đăng nhập -> Đẩy ra cửa (Login), nếu đã Login -> Thông chốt vào `MainNavigationScreen`.
+  * **Thiết kế (`LoginScreen`)**: Form đăng nhập/Đăng ký Minimalist. Khai thác hiệu quả `SingleChildScrollView` tránh tràn viền khi bàn phím ảo đẩy lên. Hỗ trợ hiển thị Loading Spinner ngay trong khối của Nút bấm (ElevatedButton) để báo hiệu thao tác Async.
 
 * **`screens/statistics_screen.dart`**: Bảng điều khiển Thống kê Sinh học (Dashboard).
   * **Thiết kế**: Vẽ song song 2 biểu đồ hoàn toàn bằng thuật toán Toán học nguyên thuỷ (`CustomPainter`), loại bỏ hoàn toàn việc phụ thuộc thư viện rác:
@@ -47,11 +52,13 @@ Các file được xây dựng trong thư mục `lib/presentation/`:
     - **Biểu đồ Tròn (Pie Chart)** sử dụng StrokeCap.round chừa khoảng hở (Gap) nghệ thuật dành riêng cho việc chia tỷ trọng danh mục.
   * **Chức năng bổ trợ**: Nút lọc thời gian (Week/Month/Year) và danh sách lịch sử băm nhỏ theo từng Cụm Ngày (Today, Yesterday...).
 
-* **`screens/wallet_screen.dart`**: Quản lý Ví điện tử & Thẻ.
+* **`screens/wallet_screen.dart`**: Quản lý Ví điện tử & Thẻ (Tích hợp Smart Virtual Split).
   * **Thiết kế**: Gọn gàng và đẳng cấp, giả lập ngoại hình các thẻ thanh toán. Bo tròn mạnh (Radius 24), Gradient mờ trải dài góc chéo, tích hợp icon Chip Wifi mang lại tính hiện thực.
+  * **Chức năng Logic**: Màn hình này hiện đóng vai trò làm Bộ chia Ảo (Virtual Splitter) cực kỳ thông minh. Nó tự động cộng tất cả số dư bằng việc theo dõi `transactionsStreamProvider`, sau đó cắt toán học: Ngay lập tức rót 70% vào thẻ Main Wallet và 30% cho Savings. Khi bạn thay đổi số dư ở trang Home, 2 tấm thẻ này đều nhảy số Realtime.
 
-* **`screens/profile_screen.dart`**: Màn hình Thiết lập & Người dùng.
-  * **Thiết kế**: Thay vì cố định, màn hình được bọc trong bộ `SingleChildScrollView`. Nó ngăn ngừa mọi lỗi "Overflow" khó chịu khi xem trên điện thoại lùn, cho phép người dùng lướt trơn tru qua danh sách Setting. Các thẻ Setting được bao viền nhẹ (Opacity 0.05) tinh giản mà không kém phần sang trọng.
+* **`screens/profile_screen.dart`**: Màn hình Thiết lập & Quản lý Tài khoản Dám Mây.
+  * **Thiết kế**: Màn hình được bọc trong bộ `SingleChildScrollView` ngăn ngừa mọi lỗi "Overflow". Các thẻ Setting được bao viền nhẹ (Opacity 0.05) tinh giản mang lại cảm giác Enterprise.
+  * **Chức năng Logic**: Tích hợp lấy dữ liệu `user?.email` trực tiếp từ Supabase Auth hiện lên giao diện. Tích hợp nút Log Out màu đỏ bọc hàm Hủy siêu cấp cứu: Xóa sạch 100% CSDL Isar Local (`isar.clear()`) để chặn đứng nguy cơ xem mờ dữ liệu từ người dùng chung thiết bị, đồng thời thoát Session.
 
 * **`screens/add_transaction_screen.dart`**: Cửa sổ thêm giao dịch (Fullscreen Modal Dialog).
   * **Chức năng**: Hiện lên mượt mà theo chiều dọc (slide from bottom) khi bấm nút (+) từ Main Navigation. Cho phép chọn Thu nhập/Chi tiêu, Category, nhập số tiền lớn và ghi chú. 

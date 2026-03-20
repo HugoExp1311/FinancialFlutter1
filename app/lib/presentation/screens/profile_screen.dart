@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(supabaseProvider).auth.currentUser;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -27,12 +30,12 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Alex Johnson',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              user?.email ?? 'Unknown User',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Premium Member ✦',
               style: TextStyle(
                 color: AppTheme.primaryColor,
@@ -68,6 +71,15 @@ class ProfileScreen extends StatelessWidget {
               Icons.logout_rounded,
               'Log Out',
               isDanger: true,
+              onTap: () async {
+                final supabase = ref.read(supabaseProvider);
+                final isar = ref.read(isarProvider);
+                
+                await supabase.auth.signOut();
+                await isar.writeTxn(() async {
+                  await isar.clear();
+                });
+              },
             ),
             const SizedBox(height: 24),
           ],
@@ -81,13 +93,14 @@ class ProfileScreen extends StatelessWidget {
     IconData icon,
     String title, {
     bool isDanger = false,
+    VoidCallback? onTap,
   }) {
     final color = isDanger
         ? AppTheme.expenseColor
         : Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
-      onTap: () {},
+      onTap: onTap ?? () {},
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),

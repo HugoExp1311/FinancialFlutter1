@@ -88,6 +88,7 @@ class TransactionRepository {
     try {
       final data = {
         'sync_id': tx.syncId,
+        'user_id': _supabase.auth.currentUser?.id,
         'amount': tx.amount,
         'is_expense': tx.isExpense,
         'category_name': tx.categoryName,
@@ -100,17 +101,21 @@ class TransactionRepository {
         'is_deleted': tx.isDeleted,
       };
 
-      // Upsert: Nếu trùng ID thì ghi đè, nếu chưa có thì cấy mới
-      await _supabase.from('transactions').upsert(data);
+      // Upsert: Dựa vào cột sync_id để ghi đè (onConflict), nếu chưa có thì cấy mới
+      await _supabase.from('transactions').upsert(
+            data,
+            onConflict: 'sync_id',
+          );
 
       // Nếu thành công không ném lỗi, ta đánh dấu trong máy Local là đã Sync
       tx.isSynced = true;
       await _isar.writeTxn(() async {
         await _isar.appTransactions.put(tx);
       });
+    } on PostgrestException catch (e) {
+      debugPrint('Supabase 🔴 LỖI DATABASE: Tên Lỗi -> ${e.message} | Gợi ý -> ${e.hint} | CODE -> ${e.code}');
     } catch (e) {
-      // Mất mạng hoặc Server lỗi: Không làm gì cả, isSynced vẫn = false
-      debugPrint('Push to Supabase failed. Kept offline. Error: $e');
+      debugPrint('Supabase 🔴 LỖI MẠNG HOẶC NGOẠI LỆ TRONG CODE: $e');
     }
   }
 

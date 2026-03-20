@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
 import 'statistics_screen.dart';
@@ -6,14 +8,14 @@ import 'wallet_screen.dart';
 import 'profile_screen.dart';
 import 'add_transaction_screen.dart';
 
-class MainNavigationScreen extends StatefulWidget {
+class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
@@ -22,6 +24,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const WalletScreen(),
     const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Vừa vào App chính (Sau khi Login xong), gọi Kéo dữ liệu đám mây về ngay
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(transactionRepositoryProvider).syncAll();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
