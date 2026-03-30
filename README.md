@@ -19,7 +19,7 @@ Flutter1/
 │   └── transaction_service/
 ├── packages/             # Các gói độc lập
 │   └── core_domain/      # Chứa Entities, Use Cases, Repositories theo chuẩn Clean UI
-├── .agent/               # Tài liệu hệ thống, System Prompts cho AI, Specs
+Prompts cho AI, Specs
 └── README.md             # File tổng quan bạn đang đọc
 ```
 
@@ -36,9 +36,10 @@ Flutter1/
 - Lưu trữ 100% dữ liệu gốc tại **Supabase** (PostgresQL).
 - Cơ chế bảo mật RLS (Row Level Security) theo từng định danh `user_id`.
 - Transaction Microservice phụ trách xử lý riêng lẻ các logic đặc thù ở phía mây.
+- **Isar** là local database dùng để hỗ trợ lưu trữ dữ liệu khi không có kết nối internet.
 
 **3. Khối óc Trung Tâm (N8N Multi-Agent Workflow)**
-- Routing mạnh mẽ qua Llama 3 70B (Groq API).
+- Routing mạnh mẽ qua **Llama 3.3 70B (Groq API)**.
 - Tích hợp Parser JSON và Data Fetcher khép kín, triệt tiêu ảo giác (Hallucination).
 
 ---
