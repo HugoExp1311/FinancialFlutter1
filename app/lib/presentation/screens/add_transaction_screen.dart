@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
-import '../../data/models/app_transaction.dart';
 import '../providers/app_providers.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
@@ -309,19 +308,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     final color = selectedCat['color'] as Color;
                     final icon = selectedCat['icon'] as IconData;
 
-                    final newTx = AppTransaction()
-                      ..amount = amountInput
-                      ..isExpense = _isExpense
-                      ..date = _selectedDate
-                      ..note = _noteController.text
-                      ..categoryName = _selectedCategory
-                      ..categoryIconCode = icon.codePoint
-                      ..categoryColorHex = color.toARGB32();
-
-                    // Luu giao dich xuong DB (Local + Cloud)
+                    // Gọi Use Case — không cần biết Isar hay Supabase
                     await ref
-                        .read(transactionRepositoryProvider)
-                        .addTransaction(newTx);
+                        .read(addTransactionUseCaseProvider)
+                        .execute(
+                          amount: amountInput,
+                          isExpense: _isExpense,
+                          date: _selectedDate,
+                          note: _noteController.text,
+                          categoryName: _selectedCategory,
+                          categoryIconCode: icon.codePoint,
+                          categoryColorHex: color.toARGB32(),
+                        );
 
                     if (!context.mounted) return;
                     Navigator.pop(context);

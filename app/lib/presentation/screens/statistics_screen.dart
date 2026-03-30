@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import '../theme/app_theme.dart';
 import '../widgets/transaction_item.dart';
 import '../providers/app_providers.dart';
+import '../utils/transaction_actions.dart';
+import '../utils/category_utils.dart';
+import 'package:core_domain/core_domain.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -13,8 +16,40 @@ class StatisticsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
-  String _timeFilter = 'Month'; // Các tab bộ lọc thời gian
+  String _timeFilter = 'Day'; // Các tab bộ lọc thời gian: Day, Week, Month, Year
+  DateTime? _selectedDate; // Ngày được chọn khi ấn vào tab Day
   int _statType = 0; // 0: Net Income, 1: Expense, 2: Income
+
+  /// Lọc mảng lịch sử giao dịch theo khoảng thời gian đã chọn
+  List<TransactionEntity> _getFilteredTransactions(List<TransactionEntity> allTxs) {
+    final now = DateTime.now();
+    DateTime startDate;
+
+    if (_timeFilter == 'Day') {
+      final target = _selectedDate ?? DateTime.now();
+      return allTxs.where((tx) {
+        if (tx.isDeleted) return false;
+        return tx.date.year == target.year &&
+               tx.date.month == target.month &&
+               tx.date.day == target.day;
+      }).toList();
+    } else if (_timeFilter == 'Week') {
+      // Trong vòng 7 ngày qua
+      startDate = now.subtract(const Duration(days: 7));
+      startDate = DateTime(startDate.year, startDate.month, startDate.day);
+    } else if (_timeFilter == 'Month') {
+      // Trong tháng này
+      startDate = DateTime(now.year, now.month, 1);
+    } else {
+      // Trong năm nay
+      startDate = DateTime(now.year, 1, 1);
+    }
+
+    return allTxs.where((tx) {
+      if (tx.isDeleted) return false;
+      return tx.date.isAfter(startDate.subtract(const Duration(microseconds: 1)));
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +63,45 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Statistics',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Statistics',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Sync Data',
+                      icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Syncing with Cloud...'), duration: Duration(seconds: 1)),
+                        );
+                        await ref.read(syncTransactionsUseCaseProvider).execute();
+                      },
+                    ),
+                  ],
                 ),
-                _buildTimeFilters(),
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: _buildTimeFilters(),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 24),
 
           Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(syncTransactionsUseCaseProvider).execute();
+              },
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -120,7 +181,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               ),
             ),
           ),
-        ],
+        ),
+      ],
       ),
     );
   }
@@ -133,18 +195,58 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: ['Week', 'Month', 'Year'].map((filter) {
+        children: ['Day', 'Week', 'Month', 'Year'].map((filter) {
           final isSelected = _timeFilter == filter;
+          String label = filter;
+          if (filter == 'Day' && isSelected) {
+            final d = _selectedDate ?? DateTime.now();
+            label = '${d.day}/${d.month}';
+          }
+
           return GestureDetector(
-            onTap: () => setState(() => _timeFilter = filter),
+            onTap: () async {
+              if (filter == 'Day') {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime.now().add(const Duration(days: 365)), // Cho chọn cả tương lai gần
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context).colorScheme.copyWith(
+                          primary: AppTheme.primaryColor,
+                          onPrimary: Colors.white,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (date != null) {
+                  setState(() {
+                    _selectedDate = date;
+                    _timeFilter = 'Day';
+                  });
+                } else if (!isSelected) {
+                  // Nếu ko chọn mà bấm ra ngoài, giữ nguyên nếu nó đang là tab khác (nếu bấn chọn tab day lần đầu thì auto pick today)
+                  setState(() {
+                    _selectedDate = DateTime.now();
+                    _timeFilter = 'Day';
+                  });
+                }
+              } else {
+                setState(() => _timeFilter = filter);
+              }
+            },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Giảm padding ngang xíu để lọt vừa màn hình nhỏ
               decoration: BoxDecoration(
                 color: isSelected ? AppTheme.primaryColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                filter,
+                label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -214,13 +316,43 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     double income = 0;
     double expense = 0;
 
+    int numBuckets = 7;
+    if (_timeFilter == 'Year') numBuckets = 12;
+    if (_timeFilter == 'Month') numBuckets = 31;
+    if (_timeFilter == 'Day') numBuckets = 24;
+
+    List<double> buckets = List.filled(numBuckets, 0.0);
+
     if (txAsyncValue.hasValue && txAsyncValue.value != null) {
-      for (var tx in txAsyncValue.value!) {
-        if (!tx.isDeleted) {
-          if (tx.isExpense) {
-            expense += tx.amount;
-          } else {
-            income += tx.amount;
+      // Áp dụng bộ lọc thời gian
+      final timeFiltered = _getFilteredTransactions(txAsyncValue.value!);
+
+      for (var tx in timeFiltered) {
+        if (tx.isExpense) {
+          expense += tx.amount;
+        } else {
+          income += tx.amount;
+        }
+
+        // Đổ data vào buckets cho biểu đồ đường
+        int bucketIndex = 0;
+        if (_timeFilter == 'Year') {
+          bucketIndex = tx.date.month - 1;
+        } else if (_timeFilter == 'Month') {
+          bucketIndex = tx.date.day - 1;
+        } else if (_timeFilter == 'Week') {
+          bucketIndex = tx.date.weekday - 1; // 0 = Mon, 6 = Sun
+        } else if (_timeFilter == 'Day') {
+          bucketIndex = tx.date.hour;
+        }
+
+        if (bucketIndex >= 0 && bucketIndex < numBuckets) {
+          if (_statType == 0) {
+            buckets[bucketIndex] += tx.isExpense ? -tx.amount : tx.amount;
+          } else if (_statType == 1 && tx.isExpense) {
+            buckets[bucketIndex] += tx.amount;
+          } else if (_statType == 2 && !tx.isExpense) {
+            buckets[bucketIndex] += tx.amount;
           }
         }
       }
@@ -275,38 +407,42 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          // Biểu đồ đường Tự Cốt (Tự vẽ bằng CustomPaint chuyên nghiệp)
+          // Biểu đồ đường vẽ bằng CustomPaint
           SizedBox(
             height: 120,
             width: double.infinity,
             child: CustomPaint(
-              painter: _LineChartPainter(lineColor: mainColor),
+              painter: _LineChartPainter(lineColor: mainColor, points: buckets),
             ),
           ),
           const SizedBox(height: 16),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Week 1',
-                style: TextStyle(color: AppTheme.textSubDark, fontSize: 12),
-              ),
-              Text(
-                'Week 2',
-                style: TextStyle(color: AppTheme.textSubDark, fontSize: 12),
-              ),
-              Text(
-                'Week 3',
-                style: TextStyle(color: AppTheme.textSubDark, fontSize: 12),
-              ),
-              Text(
-                'Week 4',
-                style: TextStyle(color: AppTheme.textSubDark, fontSize: 12),
-              ),
-            ],
-          ),
+          // Các mốc thời gian trục X
+          _buildChartLabels(),
         ],
       ),
+    );
+  }
+
+  Widget _buildChartLabels() {
+    List<String> labels = [];
+    if (_timeFilter == 'Day') {
+      labels = ['00:00', '06:00', '12:00', '18:00', '23:59'];
+    } else if (_timeFilter == 'Week') {
+      labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    } else if (_timeFilter == 'Month') {
+      labels = ['1', '8', '15', '22', '31'];
+    } else if (_timeFilter == 'Year') {
+      labels = ['Jan', 'Apr', 'Jul', 'Oct', 'Dec'];
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: labels.map((l) {
+        return Text(
+          l,
+          style: const TextStyle(color: AppTheme.textSubDark, fontSize: 10),
+        );
+      }).toList(),
     );
   }
 
@@ -316,10 +452,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     double totalFilterAmount = 0;
 
     if (txAsyncValue.hasValue && txAsyncValue.value != null) {
-      for (var tx in txAsyncValue.value!) {
-        if (!tx.isDeleted &&
-            ((_statType == 1 && tx.isExpense) ||
-                (_statType == 2 && !tx.isExpense))) {
+      final timeFiltered = _getFilteredTransactions(txAsyncValue.value!);
+
+      for (var tx in timeFiltered) {
+        if ((_statType == 1 && tx.isExpense) ||
+            (_statType == 2 && !tx.isExpense)) {
           categorySums[tx.categoryName] =
               (categorySums[tx.categoryName] ?? 0) + tx.amount;
           totalFilterAmount += tx.amount;
@@ -352,9 +489,18 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ? (sortedEntries[i].value / totalFilterAmount)
             : 0;
         sweeps.add(percentage);
+        
+        final categoryColor = CategoryUtils.getColor(sortedEntries[i].key);
+        // Lưu lại màu thật để vẽ pie chart arc
+        if (sweeps.length - 1 >= pieColors.length) {
+          pieColors.add(categoryColor);
+        } else {
+          pieColors[sweeps.length - 1] = categoryColor;
+        }
+
         legendWidgets.add(
           _buildLegendItem(
-            pieColors[i],
+            categoryColor,
             sortedEntries[i].key,
             '${(percentage * 100).toStringAsFixed(1)}%',
           ),
@@ -378,8 +524,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       );
     }
 
-    if (sweeps.isEmpty)
+    if (sweeps.isEmpty) {
       sweeps.add(1.0); // Hiển thị 1 vòng tròn trống nếu ko có data
+    }
 
     return Row(
       children: [
@@ -453,8 +600,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           );
         }
 
-        // Lọc theo loại thống kê
-        var filteredTxs = transactions.where((tx) => !tx.isDeleted).toList();
+        // 1. Lọc theo thời gian (Tuần/Tháng/Năm)
+        var filteredTxs = _getFilteredTransactions(transactions);
+
+        // 2. Lọc theo loại thống kê (Expense/Income)
         if (_statType == 1) {
           filteredTxs = filteredTxs.where((tx) => tx.isExpense).toList();
         } else if (_statType == 2) {
@@ -482,17 +631,18 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             final tx = filteredTxs[index];
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: TransactionItem(
-                title: tx.note != null && tx.note!.isNotEmpty
-                    ? tx.note!
-                    : tx.categoryName,
-                date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                amount: tx.isExpense ? -tx.amount : tx.amount,
-                icon: IconData(
-                  tx.categoryIconCode,
-                  fontFamily: 'MaterialIcons',
+              child: GestureDetector(
+                onLongPress: () => TransactionActions.showOptions(context, ref, tx),
+                onTap: () => TransactionActions.showOptions(context, ref, tx),
+                child: TransactionItem(
+                  title: tx.note != null && tx.note!.isNotEmpty
+                      ? tx.note!
+                      : tx.categoryName,
+                  date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
+                  amount: tx.isExpense ? -tx.amount : tx.amount,
+                  icon: CategoryUtils.getIcon(tx.categoryName),
+                  iconColor: CategoryUtils.getColor(tx.categoryName),
                 ),
-                iconColor: Color(tx.categoryColorHex),
               ),
             );
           },
@@ -508,10 +658,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
 class _LineChartPainter extends CustomPainter {
   final Color lineColor;
-  _LineChartPainter({required this.lineColor});
+  final List<double> points;
+  _LineChartPainter({required this.lineColor, required this.points});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (points.isEmpty) return;
+
     final paint = Paint()
       ..color = lineColor
       ..strokeWidth = 3
@@ -519,24 +672,40 @@ class _LineChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final path = Path();
-    // Giả lập dữ liệu đường cong
-    path.moveTo(0, size.height * 0.8);
-    path.cubicTo(
-      size.width * 0.2,
-      size.height * 0.8,
-      size.width * 0.2,
-      size.height * 0.2,
-      size.width * 0.4,
-      size.height * 0.4,
-    );
-    path.cubicTo(
-      size.width * 0.6,
-      size.height * 0.6,
-      size.width * 0.8,
-      size.height * 0.1,
-      size.width,
-      size.height * 0.3,
-    );
+    double maxVal = points.isNotEmpty ? points.reduce(math.max) : 0;
+    double minVal = points.isNotEmpty ? points.reduce(math.min) : 0;
+    
+    // Tạo 1 vòm cao an toàn để nét vẽ k bị chập đỉnh
+    if (minVal == maxVal) {
+      minVal -= 10;
+      maxVal += 10;
+    }
+    double range = maxVal - minVal;
+    if (range == 0) range = 1;
+
+    double stepX = size.width / (points.length <= 1 ? 1 : points.length - 1);
+
+    for (int i = 0; i < points.length; i++) {
+      // Chuẩn hóa giá trị từ 0.0 đến 1.0 (nhỏ nhất vẽ ở dưới cùng, lớn nhất ở trên)
+      double normalized = (points[i] - minVal) / range;
+      double y = size.height * 0.9 - (normalized * size.height * 0.8);
+      double x = i * stepX;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        double prevX = (i - 1) * stepX;
+        double prevNormalized = (points[i - 1] - minVal) / range;
+        double prevY = size.height * 0.9 - (prevNormalized * size.height * 0.8);
+
+        // Vẽ đường cong Bezier siêu mượt
+        path.cubicTo(
+          prevX + stepX / 2.5, prevY,
+          x - stepX / 2.5, y,
+          x, y
+        );
+      }
+    }
 
     canvas.drawPath(path, paint);
 

@@ -7,6 +7,8 @@ import 'statistics_screen.dart';
 import 'wallet_screen.dart';
 import 'profile_screen.dart';
 import 'add_transaction_screen.dart';
+import 'chatbot_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
@@ -28,9 +30,23 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Vừa vào App chính (Sau khi Login xong), gọi Kéo dữ liệu đám mây về ngay
+    // Vừa vào App chính (Sau khi Login xong), gọi Kéo dữ liệu đám mây về ngay lần đầu
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionRepositoryProvider).syncAll();
+
+      // Bật "Mắt Mạng" (Realtime Subscription) để giám sát kho dữ liệu của Supabase
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        Supabase.instance.client
+            .from('transactions')
+            .stream(primaryKey: ['sync_id'])
+            .eq('user_id', user.id)
+            .listen((event) {
+          // Ngay khi có bất kỳ ai (Dù là Web, n8n, hay thiết bị khác) đổi Data trên mây,
+          // Bắt App tự động đồng bộ lại Local Isar để nảy số trên màn hình ngay lập tức!
+          ref.read(transactionRepositoryProvider).syncAll();
+        });
+      }
     });
   }
 
@@ -47,12 +63,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             child: FloatingActionButton(
               heroTag: 'chatbot_fab',
               onPressed: () {
-                // TODO: Triển khai Chatbot AI
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('🤖 AI Assistant is coming soon!'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ChatbotScreen()),
                 );
               },
               backgroundColor: AppTheme.incomeColor,

@@ -1,0 +1,16 @@
+name: transaction_service
+description: "Microservices backend — Transaction Service (Môn học 2). Exposes REST API consumed by Flutter client."
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  shelf: ^1.4.1            # HTTP server framework (lightweight, Google-maintained)
+  shelf_router: ^1.1.4     # Route matching (GET /transactions, POST /transactions, ...)
+  core_domain:
+    path: ../../packages/core_domain   # Dùng chung Business Logic + Interface
+
+dev_dependencies:
+  lints: ^4.0.0

@@ -43,6 +43,11 @@ dependencies:
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   window_manager: ^0.5.1
+  equatable: ^2.0.5
+  # --- Local packages (Monorepo) ---
+  core_domain:
+    path: ../packages/core_domain
+
 
 dev_dependencies:
   flutter_test:

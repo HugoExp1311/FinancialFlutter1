@@ -4,6 +4,8 @@ import '../theme/app_theme.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/transaction_item.dart';
 import '../providers/app_providers.dart';
+import '../utils/transaction_actions.dart';
+import '../utils/category_utils.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -18,7 +20,7 @@ class HomeScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thanh chứa chữ Hello + Avatar
-            _buildAppBar(),
+            _buildAppBar(context, ref),
             const SizedBox(height: 24),
             // Thẻ Hiển thị Số dư
             const BalanceCard(),
@@ -46,7 +48,14 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             // Danh sách giao dịch
-            Expanded(child: _buildTransactionList(ref)),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await ref.read(syncTransactionsUseCaseProvider).execute();
+                },
+                child: _buildTransactionList(ref),
+              ),
+            ),
           ],
         ),
       ),
@@ -71,13 +80,17 @@ class HomeScreen extends ConsumerWidget {
           itemCount: transactions.length,
           itemBuilder: (context, index) {
             final tx = transactions[index];
-            return TransactionItem(
-              title: tx.categoryName,
-              // Tạm thời format String đơn giản (Nên dùng package intl để format đẹp hơn trong tương lai)
-              date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-              amount: tx.isExpense ? -tx.amount : tx.amount,
-              icon: IconData(tx.categoryIconCode, fontFamily: 'MaterialIcons'),
-              iconColor: Color(tx.categoryColorHex),
+            return GestureDetector(
+              onLongPress: () => TransactionActions.showOptions(context, ref, tx),
+              onTap: () => TransactionActions.showOptions(context, ref, tx),
+              child: TransactionItem(
+                title: tx.categoryName,
+                // Tạm thời format String đơn giản
+                date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
+                amount: tx.isExpense ? -tx.amount : tx.amount,
+                icon: CategoryUtils.getIcon(tx.categoryName),
+                iconColor: CategoryUtils.getColor(tx.categoryName),
+              ),
             );
           },
         );
@@ -87,7 +100,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -105,10 +118,26 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
-        const CircleAvatar(
-          radius: 24,
-          backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-          backgroundColor: Colors.transparent,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Sync Data',
+              icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
+              onPressed: () async {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Syncing with Cloud...'), duration: Duration(seconds: 1)),
+                );
+                await ref.read(syncTransactionsUseCaseProvider).execute();
+              },
+            ),
+            const SizedBox(width: 4),
+            const CircleAvatar(
+              radius: 20,
+              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+              backgroundColor: Colors.transparent,
+            ),
+          ],
         ),
       ],
     );
