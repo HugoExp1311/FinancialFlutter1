@@ -31,6 +31,7 @@ Prompts cho AI, Specs
 - Quản lý trạng thái (State Management) bằng **Riverpod 2.0**.
 - Flow Đăng nhập/Đăng ký qua Supabase Auth.
 - Form nhập tay truyền thống (Dành cho việc chỉnh sửa và backup).
+- Hỗ trợ Đa ngôn ngữ (Localization): Hệ thống hỗ trợ chuyển đổi hoàn thiện giữa Tiếng Việt và Tiếng Anh trên toàn bộ giao diện.
 
 **2. Hệ thống Backend (Supabase / Dart Microservice)**
 - Lưu trữ 100% dữ liệu gốc tại **Supabase** (PostgresQL).
@@ -39,8 +40,10 @@ Prompts cho AI, Specs
 - **Isar** là local database dùng để hỗ trợ lưu trữ dữ liệu khi không có kết nối internet.
 
 **3. Khối óc Trung Tâm (N8N Multi-Agent Workflow)**
-- Routing mạnh mẽ qua **Llama 3.3 70B (Groq API)**.
+- Routing mạnh mẽ qua **Llama 3.3 70B (Groq API)** hoặc **Gemini 2.5 Flash (Google API)**.
 - Tích hợp Parser JSON và Data Fetcher khép kín, triệt tiêu ảo giác (Hallucination).
+- Quét hóa đơn Đa phương thức (Multimodal OCR): Tích hợp thị giác máy tính từ **Gemini 2.5 Flash** để đọc hiểu ảnh chụp hóa đơn, tự động trích xuất tổng tiền và nội dung chi tiêu mà không cần nhập liệu.
+- Cảnh báo bất thường kép (Dual-Layer Anomaly Detection): Tự động phát hiện chi tiêu vượt ngưỡng (Tĩnh) và các hành vi lạm chi bất thường so với lịch sử (Động).
 
 ---
 
@@ -52,6 +55,7 @@ Prompts cho AI, Specs
 - Tải [Dart SDK](https://dart.dev/get-dart).
 - Tạo tài khoản nền tảng Đám mây [Supabase](https://supabase.com).
 - Tạo tài khoản API AI của [Groq](https://console.groq.com/).
+- Tạo tài khoản APi AI của [Google](https://aistudio.google.com).
 - Một Workspace chạy n8n (Local qua Docker hoặc n8n Cloud).
 
 ### Bước 2: Khởi tạo Backend Supabase
@@ -62,11 +66,13 @@ Prompts cho AI, Specs
 
 ### Bước 3: Cài đặt Hệ thống AI Backend (N8N Workflow)
 1. Mở N8N Workspace của bạn. Trỏ vào `Workflows` -> `Import from File`.
-2. Chọn file `My workflow11_MultiAgent.json` có sẵn trong thư mục gốc.
+2. Import lần lượt 3 file workflow: `AI_Agent_Coordinator.json`, `Tool_GhiChep.json`, và `Tool_PhanTich.json` vào n8n Workspace.
 3. Config lại cặp Credentials ở các node: 
    - Node `Supabase`: Gắn cặp khóa URL/Key ở Bước 2.
    - Node `Groq Chat Model`: Nhập API Key ở Groq.
-4. Chuyển nút trạng thái Workflow sang **Active** (Xanh lá).
+   - Node `Google Gemini Chat Model`: Nhập API Key ở Google AI Studio.
+4. Gắn 2 tool trong workflow phụ `Tool_GhiChep.json`, và `Tool_PhanTich.json` vào workflow chính `AI_Agent_Coordinator.json`.
+4. Chuyển nút trạng thái của cả 3 Workflow sang **Published** (Xanh lá).
 5. Mở Cục `Webhook` đầu nguồn lên, click Test và copy cái URL `Test URL` / `Production URL`.
 
 ### Bước 4: Thiết lập App Flutter
@@ -103,5 +109,6 @@ dart bin/server.dart
 2. Chuyển sang thẻ **Chatbot (AI)** nằm trong thanh định vị Bottom Navigation.
 3. Nhập văn bản: *"Hôm nay tớ tiêu 45 ngàn tiền ăn một tô phở cạn tiền luôn"* -> Tiều phu AI sẽ ghi nhận Data Kế toán.
 4. Nhập tiếp: *"Phân tích cho tớ và chốt xem tiền dư tháng này bù lỗ được không?"* -> Giáo sư AI sẽ in ra biểu đồ Markdown và đánh giá tài chính cho bạn!
+5. Nhấn vào icon Camera 📸, chọn ảnh hóa đơn bất kỳ -> AI sẽ tự động phân tích và ghi chép thông tin hóa đơn vào Database.
 
 Chúc bạn thành công với AI Finance Chatbot siêu cấp vũ trụ này! 🏆
