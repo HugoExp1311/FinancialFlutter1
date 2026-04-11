@@ -3,14 +3,6 @@ import 'package:core_domain/entities/transaction_entity.dart';
 import 'package:core_domain/repositories/i_transaction_repository.dart';
 
 /// [AddTransactionUseCase] — Xử lý logic tạo mới giao dịch.
-///
-/// Trách nhiệm:
-///   1. Validate dữ liệu đầu vào (rules thuần túy, không phụ thuộc DB).
-///   2. Sinh syncId (UUID) và timestamp — đảm bảo nhất quán giữa 2 phiên bản.
-///   3. Gọi repository để lưu trữ.
-///
-/// Cả Monolith và Microservices đều DÙNG CHUNG use case này.
-/// Chỉ khác ở `ITransactionRepository` được inject vào.
 class AddTransactionUseCase {
   final ITransactionRepository _repository;
   final _uuid = const Uuid();
@@ -25,6 +17,7 @@ class AddTransactionUseCase {
     required int categoryIconCode,
     required int categoryColorHex,
     String? note,
+    String? walletId, // 1. THÊM THAM SỐ NÀY
   }) async {
     // --- VALIDATION (Business Rules) ---
     if (amount <= 0) {
@@ -33,8 +26,9 @@ class AddTransactionUseCase {
     if (categoryName.trim().isEmpty) {
       throw ArgumentError('Danh mục không được để trống.');
     }
+    // if (walletId == null) throw ArgumentError('Phải chọn một ví thanh toán.');
 
-    // --- SINH ĐỊNH DANH (Domain responsibility, không phải UI) ---
+    // --- SINH ĐỊNH DANH & GÁN VÍ ---
     final entity = TransactionEntity(
       syncId: _uuid.v4(),
       amount: amount,
@@ -44,6 +38,7 @@ class AddTransactionUseCase {
       categoryName: categoryName.trim(),
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
+      walletId: walletId, // 2. GÁN VÍ VÀO ENTITY TẠI ĐÂY
       updatedAt: DateTime.now(),
       isSynced: false,
       isDeleted: false,
