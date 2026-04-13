@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatMessage {
   final String text;
@@ -106,9 +107,15 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
     try {
       final client = HttpClient();
-      // Bắn lệnh POST lên Cổng test của Docker n8n
+      // Đọc cấu hình từ .env xem đang thi môn nào (Monolith hay Microservice)
+      final mode = dotenv.env['ARCHITECTURE_MODE'] ?? 'monolith';
+      final String targetUrl = (mode == 'microservices')
+          ? 'http://localhost:3000/chat/send' // Qua tay thằng Gateway (Cửa khẩu đồ án 2)
+          : 'http://localhost:5678/webhook/ai-chat'; // N8N gốc (Đồ án 1)
+
+      // Bắn lệnh POST
       final request = await client.postUrl(
-        Uri.parse('http://localhost:5678/webhook/ai-chat'),
+        Uri.parse(targetUrl),
       );
       request.headers.set('Content-Type', 'application/json');
       // Bọc dán dữ liệu vào thùng JSON

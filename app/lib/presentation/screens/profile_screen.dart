@@ -1,37 +1,142 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:core_domain/core_domain.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
+  Future<void> _pickAndUploadImage(BuildContext context, WidgetRef ref) async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+      if (image == null) return;
+
+      final supabase = ref.read(supabaseProvider);
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final file = File(image.path);
+      final fileExt = image.path.split('.').last;
+
+      // Khởi tạo timestamp để link hình ảnh không bị dính cache
+      final fileName = '${DateTime.now().toIso8601String()}.$fileExt';
+      final path = '$userId/$fileName';
+
+      // Upload file vào Storage bucket có tên là 'avatar'
+      // YÊU CẦU: Bạn phải tạo một bucket tên là 'avatar' trong Supabase Storage và set public = true
+      await supabase.storage
+          .from('avatar')
+          .upload(
+            path,
+            file,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      final String publicUrl = supabase.storage
+          .from('avatar')
+          .getPublicUrl(path);
+
+      // Lưu publicUrl vào DB
+      final repository = ref.read(userProfileRepositoryProvider);
+      final currentProfileRes = await repository.watchUserProfile().first;
+
+      final updatedEntity = UserProfileEntity(
+        userId: userId,
+        firstName: currentProfileRes?.firstName,
+        lastName: currentProfileRes?.lastName,
+        avatarUrl: publicUrl,
+        dateOfBirth: currentProfileRes?.dateOfBirth,
+        gender: currentProfileRes?.gender,
+        bio: currentProfileRes?.bio,
+        phoneNumber: currentProfileRes?.phoneNumber,
+        address: currentProfileRes?.address,
+      );
+
+      await repository.updateUserProfile(updatedEntity);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật ảnh đại diện thành công')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải ảnh: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(supabaseProvider).auth.currentUser;
+    final userProfileAsync = ref.watch(userProfileStreamProvider);
+
+    // Đảm bảo sync mỗi khi vào trang (nếu bạn muốn)
+    // ref.read(userProfileRepositoryProvider).syncProfile();
+
+    final profile = userProfileAsync.value;
+    final avatarUrl = profile?.avatarUrl;
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
         child: Column(
           children: [
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.primaryColor, width: 2),
-              ),
-              child: const CircleAvatar(
-                radius: 48,
-                backgroundImage: NetworkImage(
-                  'https://i.pravatar.cc/150?img=11',
-                ),
-                backgroundColor: Colors.transparent,
+            GestureDetector(
+              onTap: () => _pickAndUploadImage(context, ref),
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primaryColor,
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 48,
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                          ? NetworkImage(avatarUrl)
+                          : const NetworkImage(
+                              'https://i.pravatar.cc/150?img=11',
+                            ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              user?.email ?? 'Unknown User',
+              profile?.firstName != null
+                  ? '${profile?.firstName} ${profile?.lastName ?? ''}'.trim()
+                  : (user?.email ?? 'Unknown User'),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
@@ -74,7 +179,7 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () async {
                 final supabase = ref.read(supabaseProvider);
                 final isar = ref.read(isarProvider);
-                
+
                 await supabase.auth.signOut();
                 await isar.writeTxn(() async {
                   await isar.clear();

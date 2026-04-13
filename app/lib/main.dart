@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:isar/isar.dart';
 import 'package:app/data/models/app_transaction.dart';
+import 'package:app/data/models/app_user_profile.dart';
 import 'presentation/providers/app_providers.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -43,7 +44,10 @@ Future<void> main() async {
 
   // Khởi tạo Isar
   final dir = await getApplicationDocumentsDirectory();
-  final isar = await Isar.open([AppTransactionSchema], directory: dir.path);
+  final isar = await Isar.open(
+    [AppTransactionSchema, AppUserProfileSchema], 
+    directory: dir.path,
+  );
 
   runApp(
     ProviderScope(

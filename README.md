@@ -8,6 +8,13 @@ Dự án Quản lý Tài chính Thông minh ứng dụng AI với kiến trúc *
 1. **Luồng Ghi Chép (Data Clerk):** Bóc tách Số tiền, Hạng mục, Ghi chú từ tin nhắn để lưu vào Database.
 2. **Luồng Phân Tích (Financial Analyst):** Đóng vai trò Cố vấn, tự động lôi toàn bộ lịch sử thu/chi, chạy thuật toán tính tổng và viết bài đánh giá tài chính cá nhân hóa cho người dùng.
 
+## 🛠 Công Nghệ Sử Dụng (Tech Stack)
+- **Frontend:** Dart (Flutter Framework)
+- **Backend Services:** Dart (Backend code)
+- **Database (Cloud):** PostgreSQL (thông qua Supabase)
+- **Database (Local/Offline):** Isar Database
+- **AI Orchestration:** N8N (chạy bằng JavaScript/Node.js) kết hợp mô hình LLM.
+
 ## 🏗 Cấu Trúc Dự Án (Monorepo Architecture)
 
 Dự án áp dụng triệt để nguyên lý **Clean Architecture** và chia thành các khối tách biệt:
@@ -18,8 +25,7 @@ Flutter1/
 ├── microservices/        # Dịch vụ Backend (Dart backend server, REST APIs custom)
 │   └── transaction_service/
 ├── packages/             # Các gói độc lập
-│   └── core_domain/      # Chứa Entities, Use Cases, Repositories theo chuẩn Clean UI
-Prompts cho AI, Specs
+│   └── core_domain/      # Chứa Entities, Use Cases,
 └── README.md             # File tổng quan bạn đang đọc
 ```
 
@@ -44,9 +50,36 @@ Prompts cho AI, Specs
 
 ---
 
-## 💻 Hướng Dẫn Cài Đặt và Chạy Mã Nguồn (Installation)
+## 💻 Hướng Dẫn Cài Đặt (Installation)
 
-### Bước 1: Yêu Cầu Môi Trường (Prerequisites)
+Dự án hỗ trợ 2 phương pháp cài đặt: **Triển khai cực nhanh bằng Docker** (cho máy chủ/backend) và **Cài đặt Mã nguồn Thủ công** (cho lập trình viên phát triển App).
+
+---
+
+### Phương Pháp 1: Triển Khai Nhanh Bằng Docker Compose (Khuyên dùng cho Backend)
+
+Bằng Docker, bạn có thể khởi chạy toàn bộ Hệ sinh thái AI (bao gồm N8N Workspace và Dart Microservices) chỉ với 1 gõ phím.
+
+1. **Yêu cầu:** Đảm bảo máy tính đã cài đặt [Docker Desktop](https://www.docker.com/) (hoặc Docker Engine & Docker Compose).
+2. **Cấu hình Môi trường:** Tạo một file `.env` ở thư mục gốc của dự án và điền các khóa API:
+   ```env
+   SUPABASE_URL=dán_đường_link_supabase_của_bạn
+   SUPABASE_ANON_KEY=dán_key_ẩn_danh_supabase
+   GROQ_API_KEY=dán_api_key_cua_groq_vao_day
+   ```
+3. **Khởi chạy hệ thống:**
+   Mở terminal tại thư mục gốc và chạy lệnh:
+   ```bash
+   docker compose up -d
+   ```
+   *Hệ thống sẽ kéo N8N image, tự động dựng Dart Microservices lên các Container độc lập.*
+4. **Kết nối Flutter App:** Tiếp tục thực hiện **Bước 4 ở Phương pháp 2** để khởi chạy App điện thoại và trỏ Webhook URL về N8N Local (thường là `http://localhost:5678/webhook/...`).
+
+---
+
+### Phương Pháp 2: Cài Đặt Mã Nguồn Thủ Công (Dành cho Lập Trình Viên)
+
+#### Bước 1: Yêu Cầu Môi Trường (Prerequisites)
 Đảm bảo máy của bạn đã cài đặt các công cụ sau:
 - Tải [Flutter SDK](https://docs.flutter.dev/get-started/install) (Khuyến nghị version >= 3.x).
 - Tải [Dart SDK](https://dart.dev/get-dart).
@@ -104,4 +137,4 @@ dart bin/server.dart
 3. Nhập văn bản: *"Hôm nay tớ tiêu 45 ngàn tiền ăn một tô phở cạn tiền luôn"* -> Tiều phu AI sẽ ghi nhận Data Kế toán.
 4. Nhập tiếp: *"Phân tích cho tớ và chốt xem tiền dư tháng này bù lỗ được không?"* -> Giáo sư AI sẽ in ra biểu đồ Markdown và đánh giá tài chính cho bạn!
 
-Chúc bạn thành công với AI Finance Chatbot siêu cấp vũ trụ này! 🏆
+

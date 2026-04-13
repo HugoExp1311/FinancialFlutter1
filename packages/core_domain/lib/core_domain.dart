@@ -4,9 +4,11 @@
 
 // --- Entities ---
 export 'entities/transaction_entity.dart';
+export 'entities/user_profile_entity.dart';
 
 // --- Repository Interfaces (Contracts) ---
 export 'repositories/i_transaction_repository.dart';
+export 'repositories/i_user_profile_repository.dart';
 
 // --- Use Cases ---
 export 'use_cases/add_transaction_use_case.dart';

@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
+import 'package:app/data/repositories/user_profile_repository_impl.dart';
 
 // =============================================================================
 // INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
@@ -31,6 +32,12 @@ final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
   final isar = ref.watch(isarProvider);
   final supabase = ref.watch(supabaseProvider);
   return TransactionRepositoryImpl(isar, supabase);
+});
+
+final userProfileRepositoryProvider = Provider<IUserProfileRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  final supabase = ref.watch(supabaseProvider);
+  return UserProfileRepositoryImpl(isar, supabase);
 });
 
 // =============================================================================
@@ -62,6 +69,11 @@ final transactionsStreamProvider =
     StreamProvider<List<TransactionEntity>>((ref) {
   final repository = ref.watch(transactionRepositoryProvider);
   return repository.watchTransactions();
+});
+
+final userProfileStreamProvider = StreamProvider<UserProfileEntity?>((ref) {
+  final repository = ref.watch(userProfileRepositoryProvider);
+  return repository.watchUserProfile();
 });
 
 /// Tính tổng chi tiêu từ stream hiện tại.

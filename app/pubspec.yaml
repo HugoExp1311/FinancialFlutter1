@@ -47,6 +47,7 @@ dependencies:
   # --- Local packages (Monorepo) ---
   core_domain:
     path: ../packages/core_domain
+  image_picker: ^1.2.1
 
 
 dev_dependencies:

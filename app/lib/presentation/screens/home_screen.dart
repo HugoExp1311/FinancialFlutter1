@@ -101,20 +101,28 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.watch(userProfileStreamProvider);
+    final profile = userProfileAsync.value;
+    final avatarUrl = profile?.avatarUrl;
+    
+    final displayName = profile?.firstName != null 
+        ? '${profile?.firstName} ${profile?.lastName ?? ''}'.trim()
+        : 'User';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
+          children: [
+            const Text(
               'Good Morning,',
               style: TextStyle(fontSize: 14, color: AppTheme.textSubDark),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
-              'Alex Johnson!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              '$displayName!',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -129,13 +137,16 @@ class HomeScreen extends ConsumerWidget {
                   const SnackBar(content: Text('Syncing with Cloud...'), duration: Duration(seconds: 1)),
                 );
                 await ref.read(syncTransactionsUseCaseProvider).execute();
+                await ref.read(userProfileRepositoryProvider).syncProfile();
               },
             ),
             const SizedBox(width: 4),
-            const CircleAvatar(
+            CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
               backgroundColor: Colors.transparent,
+              backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                  ? NetworkImage(avatarUrl)
+                  : const NetworkImage('https://i.pravatar.cc/150?img=11'),
             ),
           ],
         ),
