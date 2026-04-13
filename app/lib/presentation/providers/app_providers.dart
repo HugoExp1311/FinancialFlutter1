@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
+import '../../data/models/app_wallet.dart';
 
 // =============================================================================
 // INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
@@ -79,3 +80,11 @@ final totalIncomeProvider = Provider<double>((ref) {
       .where((t) => !t.isExpense && !t.isDeleted)
       .fold<double>(0.0, (sum, item) => sum + item.amount);
 });
+
+// Provider để theo dõi danh sách ví từ Isar theo thời gian thực
+final walletsStreamProvider = StreamProvider<List<WalletEntity>>((ref) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return repository.watchWallets(); 
+});
+
+
