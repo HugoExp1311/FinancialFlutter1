@@ -278,6 +278,133 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  // --- LOGIC: HIỆN MODAL HELP & SUPPORT ---
+  void _showHelpAndSupport(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent, 
+      builder: (context) {
+        // Bắt sự kiện chạm vào vùng trong suốt (bên ngoài) để đóng Modal
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(), 
+          child: GestureDetector(
+            // Ngăn chặn sự kiện pop bị kích hoạt khi người dùng bấm vào bên trong phần nội dung màu trắng
+            onTap: () {}, 
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.6, 
+              minChildSize: 0.4,     
+              maxChildSize: 0.9,     
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thanh gạt nhỏ ở trên cùng
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Help & Support', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      
+                      // Danh sách cuộn
+                      Expanded(
+                        child: ListView(
+                          controller: scrollController,
+                          children: [
+                            const Text('Câu hỏi thường gặp (FAQ)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            const SizedBox(height: 8),
+                            
+                            const ExpansionTile(
+                              title: Text('Làm sao để thêm giao dịch mới?', style: TextStyle(fontWeight: FontWeight.w500)),
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                  child: Text('Bạn có thể nhấn vào nút "+" màu xanh ở giữa thanh công cụ bên dưới để thêm thu nhập hoặc chi phí.'),
+                                ),
+                              ],
+                            ),
+                            const ExpansionTile(
+                              title: Text('Dữ liệu của tôi có được đồng bộ không?', style: TextStyle(fontWeight: FontWeight.w500)),
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                  child: Text('Có, ứng dụng tự động lưu trữ cục bộ và đồng bộ an toàn lên hệ thống đám mây mỗi khi bạn có kết nối mạng.'),
+                                ),
+                              ],
+                            ),
+                            const ExpansionTile(
+                              title: Text('Cách thay đổi ảnh đại diện?', style: TextStyle(fontWeight: FontWeight.w500)),
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                  child: Text('Trong màn hình Profile, bạn chỉ cần nhấn trực tiếp vào Avatar hiện tại để tải ảnh mới lên.'),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 32),
+                            const Text('Liên hệ hỗ trợ', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+                            const SizedBox(height: 8),
+                            
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                                child: Icon(Icons.email_outlined, color: AppTheme.primaryColor),
+                              ),
+                              title: const Text('Gửi Email'),
+                              subtitle: const Text('support@financeapp.com'),
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Tính năng mở Email đang được phát triển! 📧')),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                                child: Icon(Icons.phone_in_talk_outlined, color: AppTheme.primaryColor),
+                              ),
+                              title: const Text('Hotline'),
+                              subtitle: const Text('1900 1234 (Miễn phí)'),
+                              onTap: () {
+                                 ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Tính năng gọi điện đang được phát triển! 📞')),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(profileProvider);
@@ -391,6 +518,7 @@ class ProfileScreen extends ConsumerWidget {
                   context,
                   Icons.help_outline_rounded,
                   'Help & Support',
+                  onTap: () => _showHelpAndSupport(context),
                 ),
                 const SizedBox(height: 48),
 
