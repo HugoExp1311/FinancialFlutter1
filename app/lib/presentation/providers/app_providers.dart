@@ -88,3 +88,16 @@ final walletsStreamProvider = StreamProvider<List<WalletEntity>>((ref) {
 });
 
 
+// fetch dữ liệu từ bảng user_profile
+final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return null;
+
+  final response = await Supabase.instance.client
+      .from('user_profile')
+      .select()
+      .eq('id', user.id)
+      .maybeSingle();
+  
+  return response;
+});
