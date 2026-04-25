@@ -278,6 +278,239 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
+  // --- LOGIC: HIỆN MODAL SECURITY & FACE ID ---
+  void _showSecuritySettings(BuildContext context) {
+    // Trạng thái mặc định (Sau này lưu vào Isar/SharedPreferences)
+    bool isAppLockEnabled = false;
+    bool isBiometricEnabled = false;
+    bool isHideBalanceEnabled = true;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(), // Bấm ra ngoài để đóng
+          child: GestureDetector(
+            onTap: () {}, // Chặn đóng khi bấm vào nền trắng
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thanh gạt
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Security & FaceID', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 24),
+
+                      // --- DANH SÁCH TÙY CHỌN BẢO MẬT ---
+                      
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.password_rounded, color: Colors.orange),
+                        ),
+                        title: const Text('Mã PIN ứng dụng', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Yêu cầu nhập PIN khi mở app'),
+                        value: isAppLockEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            isAppLockEnabled = value;
+                            // Nếu tắt mã PIN thì tự động tắt luôn FaceID
+                            if (!value) isBiometricEnabled = false;
+                          });
+                        },
+                      ),
+                      const Divider(height: 24),
+
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.face_retouching_natural_rounded, color: Colors.green),
+                        ),
+                        title: const Text('Xác thực FaceID / TouchID', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Mở khóa nhanh bằng sinh trắc học'),
+                        value: isBiometricEnabled,
+                        // Nút này chỉ hoạt động nếu Mã PIN đã được bật
+                        onChanged: isAppLockEnabled 
+                          ? (bool value) {
+                              setState(() {
+                                isBiometricEnabled = value;
+                              });
+                            }
+                          : null, 
+                      ),
+                      const Divider(height: 24),
+
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.visibility_off_rounded, color: Colors.purple),
+                        ),
+                        title: const Text('Ẩn số dư mặc định', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Làm mờ số tiền ở màn hình Home'),
+                        value: isHideBalanceEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            isHideBalanceEnabled = value;
+                          });
+                        },
+                      ),
+                      
+                      SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // --- LOGIC: HIỆN MODAL CÀI ĐẶT THÔNG BÁO ---
+  void _showNotificationsSettings(BuildContext context) {
+    // Khởi tạo trạng thái mặc định cho các nút gạt (Switch)
+    // Thực tế sau này cậu có thể lưu các biến này vào Isar (local) hoặc Supabase
+    bool isDailyReminderEnabled = true;
+    bool isBudgetAlertEnabled = true;
+    bool isPromoEnabled = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => Navigator.of(context).pop(), // Bấm ra ngoài để đóng
+          child: GestureDetector(
+            onTap: () {}, // Chặn sự kiện đóng khi bấm vào nền trắng
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Chỉ chiếm không gian vừa đủ
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Thanh gạt nhỏ ở trên cùng
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 24),
+
+                      // --- DANH SÁCH CÁC TÙY CHỌN THÔNG BÁO ---
+                      
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
+                          child: Icon(Icons.access_alarm_rounded, color: AppTheme.primaryColor),
+                        ),
+                        title: const Text('Nhắc nhở hàng ngày', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Nhắc bạn ghi chép vào 20:00 mỗi tối'),
+                        value: isDailyReminderEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            isDailyReminderEnabled = value;
+                          });
+                        },
+                      ),
+                      const Divider(height: 24),
+
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: AppTheme.expenseColor.withOpacity(0.1), shape: BoxShape.circle),
+                          child: Icon(Icons.warning_amber_rounded, color: AppTheme.expenseColor),
+                        ),
+                        title: const Text('Cảnh báo vượt ngân sách', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Gửi thông báo khi chi tiêu sắp vượt hạn mức'),
+                        value: isBudgetAlertEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            isBudgetAlertEnabled = value;
+                          });
+                        },
+                      ),
+                      const Divider(height: 24),
+
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: AppTheme.primaryColor,
+                        secondary: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                          child: const Icon(Icons.campaign_outlined, color: Colors.blue),
+                        ),
+                        title: const Text('Cập nhật hệ thống & Tin tức', style: TextStyle(fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Nhận thông báo về tính năng mới'),
+                        value: isPromoEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            isPromoEnabled = value;
+                          });
+                        },
+                      ),
+                      
+                      // Thêm một chút khoảng trống ở dưới cùng
+                      SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // --- LOGIC: HIỆN MODAL HELP & SUPPORT ---
   void _showHelpAndSupport(BuildContext context) {
     showModalBottomSheet(
@@ -508,11 +741,13 @@ class ProfileScreen extends ConsumerWidget {
                   context,
                   Icons.security_rounded,
                   'Security & FaceID',
+                  onTap: () => _showSecuritySettings(context),
                 ),
                 _buildSettingItem(
                   context,
                   Icons.notifications_none_rounded,
                   'Notifications',
+                  onTap: () => _showNotificationsSettings(context),
                 ),
                 _buildSettingItem(
                   context,
