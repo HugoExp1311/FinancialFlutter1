@@ -44,7 +44,7 @@ class AddTransactionUseCase {
       categoryName: categoryName.trim(),
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
       isSynced: false,
       isDeleted: false,
     );
