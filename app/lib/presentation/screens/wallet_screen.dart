@@ -70,16 +70,42 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () async {
-                  final user = Supabase.instance.client.auth.currentUser;
-                  await Supabase.instance.client.from('wallets').insert({
-                    'name': nameController.text,
-                    'balance': double.tryParse(balanceController.text) ?? 0.0,
-                    'user_id': user?.id,
-                    'color_hex': '0xFF1F4C74', 
-                  });
-                  // Gọi sync lại sau khi thêm mới
-                  ref.read(transactionRepositoryProvider).syncAll();
-                  if (mounted) Navigator.pop(context);
+                  try {
+                    final user = Supabase.instance.client.auth.currentUser;
+                    if (user == null) return;
+
+                    // 1. Insert vào Supabase VÀ DÙNG .select().single() để lấy lại data (gồm UUID do Supabase tự sinh)
+                    final response = await Supabase.instance.client.from('wallets').insert({
+                      'name': nameController.text.trim(),
+                      'balance': double.tryParse(balanceController.text) ?? 0.0,
+                      'user_id': user.id,
+                      'color_hex': '0xFF1F4C74', 
+                    }).select().single();
+
+                    // 2. Lưu trực tiếp xuống Isar để UI (đang watch Isar) cập nhật NGAY LẬP TỨC
+                    final newWallet = AppWallet()
+                      ..syncId = response['id']
+                      ..name = response['name']
+                      ..balance = (response['balance'] as num).toDouble()
+                      ..colorHex = response['color_hex']
+                      ..userId = user.id
+                      ..updatedAt = DateTime.now()
+                      ..isSynced = true;
+
+                    final isar = ref.read(isarProvider);
+                    await isar.writeTxn(() async {
+                      await isar.appWallets.put(newWallet);
+                    });
+
+                    // Đóng modal
+                    if (context.mounted) Navigator.pop(context);
+
+                  } catch (e) {
+                    debugPrint('Lỗi tạo ví: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+                    }
+                  }
                 },
                 child: const Text('Create Wallet', style: TextStyle(color: Colors.white)),
               ),
