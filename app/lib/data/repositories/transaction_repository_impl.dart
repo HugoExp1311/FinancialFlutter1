@@ -93,7 +93,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     if (tx == null) { return; }
 
     tx.isDeleted = true;
-    tx.updatedAt = DateTime.now();
+    tx.updatedAt = DateTime.now().toUtc();
     tx.isSynced = false;
 
     await _isar.writeTxn(() async {
@@ -177,8 +177,8 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         'category_icon_code': tx.categoryIconCode,
         'category_color_hex': tx.categoryColorHex,
         'note': tx.note,
-        'date': tx.date.toIso8601String(),
-        'updated_at': tx.updatedAt.toIso8601String(),
+        'date': tx.date.toUtc().toIso8601String(),
+        'updated_at': tx.updatedAt.toUtc().toIso8601String(),
         'is_synced': true,
         'is_deleted': tx.isDeleted,
       };

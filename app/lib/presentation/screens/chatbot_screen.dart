@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:image_picker/image_picker.dart'; // Thêm dòng này để sử dụng ImagePicker
 
 class ChatMessage {
   final String text;
@@ -61,6 +61,42 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   bool _isLoading = false;
 
+  // 1. THÊM 2 BIẾN NÀY ĐỂ XỬ LÝ ẢNH
+  final ImagePicker _picker = ImagePicker();
+  String? _base64Image;
+
+  // 2. THÊM HÀM CHỌN ẢNH NÀY
+  Future<void> _pickImage() async {
+    try {
+      // Trên Windows, ImageSource.gallery sẽ mở File Explorer
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery, 
+        maxWidth: 1000, // Nén kích thước để nhẹ payload
+        imageQuality: 50, // Nén chất lượng 50%
+      );
+
+      if (image != null) {
+        // Đọc file thành byte và mã hóa sang chuỗi Base64
+        final bytes = await image.readAsBytes();
+        _base64Image = base64Encode(bytes);
+
+        // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
+        ref.read(chatMessagesProvider.notifier).addMessage(
+              ChatMessage(text: '📸 [Đã đính kèm ảnh hóa đơn]', isUser: true),
+            );
+
+        // Tự động gọi hàm gửi API lên n8n
+        _handleSubmitted("Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.");
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi chọn ảnh: $e')),
+        );
+      }
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -77,9 +113,14 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
-    ref.read(chatMessagesProvider.notifier).addMessage(
-          ChatMessage(text: text, isUser: true),
-        );
+    
+    // Chỉ in tin nhắn ra màn hình NẾU nó KHÔNG PHẢI là câu lệnh quét ảnh tự động
+    if (text != "Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.") {
+      ref.read(chatMessagesProvider.notifier).addMessage(
+            ChatMessage(text: text, isUser: true),
+          );
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -88,44 +129,42 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     // Lấy thông tin user hiện tại để gài vô gói gửi lên cho AI
     final user = Supabase.instance.client.auth.currentUser;
 
-    // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
-    final transactions = ref.read(transactionsStreamProvider).value ?? [];
-    // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
-    final sortedTxs = List<TransactionEntity>.from(transactions)
-      ..sort((a, b) => b.date.compareTo(a.date));
-    final recentTxs = sortedTxs.take(100).toList();
+    // // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
+    // final transactions = ref.read(transactionsStreamProvider).value ?? [];
+    // // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
+    // final sortedTxs = List<TransactionEntity>.from(transactions)
+    //   ..sort((a, b) => b.date.compareTo(a.date));
+    // final recentTxs = sortedTxs.take(15).toList();
 
-    final String historyString = recentTxs
-        .map((t) {
-          final sign = t.isExpense ? 'Chi' : 'Thu';
-          // Format thủ công dd/mm/yyyy
-          final dateStr =
-              "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
-          return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
-        })
-        .join(" | ");
+    // final String historyString = recentTxs
+    //     .map((t) {
+    //       final sign = t.isExpense ? 'Chi' : 'Thu';
+    //       // Format thủ công dd/mm/yyyy
+    //       final dateStr =
+    //           "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
+    //       return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
+    //     })
+    //     .join(" | ");
 
     try {
       final client = HttpClient();
-      // Đọc cấu hình từ .env xem đang thi môn nào (Monolith hay Microservice)
-      final mode = dotenv.env['ARCHITECTURE_MODE'] ?? 'monolith';
-      final String targetUrl = (mode == 'microservices')
-          ? 'http://localhost:3000/chat/send' // Qua tay thằng Gateway (Cửa khẩu đồ án 2)
-          : 'http://localhost:5678/webhook/ai-chat'; // N8N gốc (Đồ án 1)
-
-      // Bắn lệnh POST
+      // Bắn lệnh POST lên Cổng test của Docker n8n
       final request = await client.postUrl(
-        Uri.parse(targetUrl),
+        Uri.parse('http://localhost:5678/webhook/ai-chat'),
       );
       request.headers.set('Content-Type', 'application/json');
       // Bọc dán dữ liệu vào thùng JSON
       final payload = {
         'message': text,
         'user_id': user?.id,
-        'history': historyString, // Điệp viên Data chìm
-        'current_date': DateTime.now()
-            .toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
+      //  'history': historyString, // Điệp viên Data chìm
+        'current_date': DateTime.now().toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
+        if (_base64Image != null) 'image_base64': _base64Image, // THÊM DÒNG NÀY: Gửi ảnh nếu có
       };
+
+      // Xóa bộ nhớ tạm của ảnh sau khi đã gói hàng xong để không bị gửi kèm vào câu chat chữ tiếp theo
+      _base64Image = null;
+
       request.add(utf8.encode(jsonEncode(payload)));
 
       // Chờ AI n8n trả kết quả về
@@ -318,6 +357,15 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       child: SafeArea(
         child: Row(
           children: [
+
+            // THÊM NÚT CAMERA Ở ĐÂY
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_rounded, color: AppTheme.textSubDark),
+              onPressed: _pickImage,
+              tooltip: 'Gửi hóa đơn',
+            ),
+            const SizedBox(width: 8), // Khoảng cách nhỏ giữa nút camera và ô nhập văn bản
+
             Expanded(
               child: TextField(
                 controller: _textController,

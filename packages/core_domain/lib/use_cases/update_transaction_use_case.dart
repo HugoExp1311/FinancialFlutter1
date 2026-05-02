@@ -40,7 +40,7 @@ class UpdateTransactionUseCase {
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
       note: note?.trim().isEmpty == true ? null : note?.trim(),
-      updatedAt: DateTime.now(), // Bắt buộc cập nhật timestamp
+      updatedAt: DateTime.now().toUtc(), // Bắt buộc cập nhật timestamp
       isSynced: false,           // Đánh dấu cần sync lại
     );
 
