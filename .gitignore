@@ -121,3 +121,4 @@ app.*.symbols
 # Env variables
 .env
 
+/docs
