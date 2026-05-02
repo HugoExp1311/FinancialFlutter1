@@ -1,0 +1,40 @@
+@startuml
+' Tăng độ phân giải và giãn cách
+skinparam dpi 150
+left to right direction
+
+package "Client Layer" #FFF9C4 {
+    [Flutter Mobile App] as app
+    [Isar Database (Offline)] as isar
+    
+    app --(0- isar
+}
+
+package "External Services" #C5CAE9 {
+    [Supabase (Auth & Database)] as supabase
+    [Groq LLM API] as groq
+}
+
+package "Server (Docker Environment)" #E3F2FD {
+    [API Gateway (Nginx)] as gateway
+
+    package "Microservices" #C8E6C9 {
+        [Transaction Service (Dart)] as transaction
+        [Chatbot Service (Dart)] as chatbot
+        [n8n Automation Engine] as n8n
+        
+        gateway --(0- transaction
+        gateway --(0- chatbot
+        chatbot --(0- n8n
+    }
+}
+
+' Kết nối Client - Server
+app --(0- gateway
+
+' Kết nối Server - External
+transaction --(0- supabase
+n8n --(0- supabase
+n8n --(0- groq
+
+@enduml

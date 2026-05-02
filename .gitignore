@@ -120,4 +120,5 @@ app.*.symbols
 
 # Env variables
 .env
-
+start.bat
+start_micro.bat

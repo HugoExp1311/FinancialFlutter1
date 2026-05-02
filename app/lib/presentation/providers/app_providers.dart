@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
 import 'package:app/data/repositories/user_profile_repository_impl.dart';
+import 'package:app/data/repositories/transaction_repository_http.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // =============================================================================
 // INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
@@ -28,7 +30,17 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
 /// UI và Use Cases CHỈ biết Interface này, không biết Impl cụ thể.
 /// Khi chuyển sang Microservices, chỉ cần swap dòng này:
 ///   TransactionRepositoryImpl → TransactionRepositoryHttp
+
 final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
+  final mode = dotenv.env['ARCHITECTURE_MODE'] ?? 'monolith';
+  
+  if (mode == 'microservices') {
+    // BẬT Microservices: Client kết nối qua HTTP đến Server Dart (Task 4.2)
+    final baseUrl = dotenv.env['MICROSERVICE_URL'] ?? 'http://localhost:8080';
+    return TransactionRepositoryHttp(baseUrl: baseUrl);
+  }
+
+  // TẮT Microservices (Mặc định Monolith môn 1)
   final isar = ref.watch(isarProvider);
   final supabase = ref.watch(supabaseProvider);
   return TransactionRepositoryImpl(isar, supabase);

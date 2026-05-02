@@ -9,6 +9,8 @@ environment:
 dependencies:
   shelf: ^1.4.1            # HTTP server framework (lightweight, Google-maintained)
   shelf_router: ^1.1.4     # Route matching (GET /transactions, POST /transactions, ...)
+  supabase: ^2.4.0         # Official Supabase client for Dart (server-side)
+  dotenv: ^4.2.0           # Load config
   core_domain:
     path: ../../packages/core_domain   # Dùng chung Business Logic + Interface
 

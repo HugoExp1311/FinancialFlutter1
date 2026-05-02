@@ -1,0 +1,105 @@
+{
+  "name": "Tool_PhanTich",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"user_id\": \"Mã của người dùng\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fab41b74-f6c4-408c-a315-57295b565dc9",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "transactions",
+        "limit": 100,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.user_id }}"
+            },
+            {
+              "keyName": "is_deleted",
+              "condition": "eq",
+              "keyValue": "={{ false }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "afdf5be7-5f34-4bd8-b452-532ab260db16",
+      "name": "Get Rows Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "t00zNFumSwrIhjXM",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Máy hút dữ liệu: Lôi toàn bộ data chảy từ Supabase sang\nconst txns = $input.all(); \n\n// Sắp xếp mảng theo thứ tự Ngày giờ giảm dần (Mới nhất lên đầu)\ntxns.sort((a, b) => {\n    const dateA = a.json.date ? new Date(a.json.date) : new Date(0);\n    const dateB = b.json.date ? new Date(b.json.date) : new Date(0);\n    return dateB - dateA; // Thời gian lớn hơn (mới hơn) sẽ trồi lên trên\n});\n\nlet totalIncome = 0;\nlet totalExpense = 0;\nlet validTxnCount = 0; \nlet historyStr = []; \n\n// 2. Chạy Vòng lặp Cộng trừ và Xử lý múi giờ\ntxns.forEach((row) => {\n    const data = row.json;\n\n    // Màng lọc Giao dịch Khóa/Bị Xóa Mềm\n    if (data.is_deleted === true || data.isdeleted === true) {\n        return; \n    }\n\n    validTxnCount++;\n    const amount = Number(data.amount) || 0; \n    \n    if (data.is_expense === true) {\n        totalExpense += amount;\n    } else {\n        totalIncome += amount;\n    }\n\n    // --- CỘNG 7 TIẾNG VÀ ĐỊNH DẠNG LẠI ---\n    let formattedDateTime = 'N/A';\n    if (data.date) {\n        // Tạo đối tượng Date từ chuỗi UTC trong Database\n        const utcDate = new Date(data.date);\n        // Cộng thêm 7 tiếng (7 * 60 * 60 * 1000 ms)\n        const vnDate = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));\n        \n        // Định dạng ngày giờ theo kiểu Việt Nam (DD/MM/YYYY HH:mm)\n        const d = vnDate.getDate().toString().padStart(2, '0');\n        const m = (vnDate.getMonth() + 1).toString().padStart(2, '0');\n        const y = vnDate.getFullYear();\n        const hr = vnDate.getHours().toString().padStart(2, '0');\n        const min = vnDate.getMinutes().toString().padStart(2, '0');\n        \n        formattedDateTime = `${d}/${m}/${y} ${hr}:${min}`;\n    }\n\n    // Gửi dòng dữ liệu đã chuẩn hóa sang cho AI (Dùng đơn vị USD cho khớp logic hệ thống)\n    const tBody = `- [${formattedDateTime}] [${data.category_name}] ${data.is_expense ? 'Chi' : 'Thu'} ${amount.toLocaleString('en-US')} USD (${data.note || 'Trống'})`;\n    historyStr.push(tBody);\n});\n\n// 3. Trả về báo cáo (Sửa hiển thị đơn vị thành USD để AI không nhầm lẫn)\nreturn [{\n  json: {\n    tong_thu: totalIncome.toLocaleString('en-US') + \" USD\",\n    tong_chi: totalExpense.toLocaleString('en-US') + \" USD\",\n    so_du: (totalIncome - totalExpense).toLocaleString('en-US') + \" USD\",\n    tong_so_giao_dich: validTxnCount,\n    kich_ban_lich_su: historyStr.join(\"\\n\")\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ],
+      "id": "027beacf-4c90-439e-bf61-68c80514681a",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Rows Supabase": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Rows Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6023740f-e474-43af-b8d1-29f076fa2205",
+  "meta": {
+    "instanceId": "57cff41fcd42a452a4a9eaa9b15d02066c2fe92dbf30cb56f03ed8d97c0911a4"
+  },
+  "id": "5L7thAd3x4e568D8",
+  "tags": []
+}

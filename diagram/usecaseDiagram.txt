@@ -1,0 +1,56 @@
+@startuml
+' Cấu hình hiển thị
+left to right direction
+skinparam packageStyle rectangle
+skinparam dpi 150
+skinparam actorStyle hollow
+
+' Khai báo các Tác nhân (Actors)
+actor "Người dùng" as user
+rectangle "Supabase (Database/Auth)" as supabase <<External System>>
+rectangle "Groq LLM API" as groq <<External System>>
+
+' Khai báo Ranh giới Hệ thống
+rectangle "Finance AI App System" {
+    
+    ' Nhóm Quản lý Tài khoản
+    usecase "Đăng nhập hệ thống" as UC_Login
+    usecase "Cấp phát và Xác thực JWT" as UC_Auth
+    
+    ' Nhóm Quản lý Thu Chi
+    usecase "Xem danh sách Giao dịch" as UC_View
+    usecase "Tạo Giao dịch mới" as UC_Add
+    usecase "Lưu trữ nội bộ (Chế độ Offline)" as UC_Offline
+    
+    ' Nhóm Trợ lý Ảo AI
+    usecase "Trò chuyện với Chatbot" as UC_Chat
+    usecase "Phân loại ý định (Router)" as UC_Intent
+    usecase "Phân tích và Tư vấn" as UC_Analyze
+}
+
+' Liên kết từ Người dùng
+user --> UC_Login
+user --> UC_View
+user --> UC_Add
+user --> UC_Chat
+
+' Các liên kết nội bộ (Include / Extend)
+UC_Login ..> UC_Auth : <<include>>
+
+' Cơ chế cầu dao lưu offline
+UC_Add <.. UC_Offline : <<extend>> \n(Nếu mất mạng)
+
+' Luồng xử lý của n8n và Chatbot
+UC_Chat ..> UC_Intent : <<include>>
+UC_Intent ..> UC_Analyze : <<include>> \n(Nhánh phân tích)
+UC_Intent ..> UC_Add : <<include>> \n(Nhánh ghi sổ tự động)
+
+' Liên kết ra Hệ thống bên ngoài
+UC_Auth --> supabase
+UC_View --> supabase
+UC_Add --> supabase
+
+UC_Analyze --> groq
+UC_Intent --> groq
+
+@enduml

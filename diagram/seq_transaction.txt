@@ -1,0 +1,33 @@
+@startuml
+skinparam dpi 150
+autonumber
+actor "Người dùng" as user
+participant "Flutter App\n(Repository)" as app
+database "Isar DB\n(Local)" as isar
+participant "API Gateway\n(Nginx)" as gateway
+participant "Transaction\nService" as service
+database "Supabase\n(Cloud DB)" as supabase
+
+user -> app : Nhập giao dịch (Số tiền, Danh mục)
+app -> app : Kiểm tra trạng thái Internet (Cầu dao)
+
+alt Mất kết nối mạng (Chế độ Offline)
+    app -> isar : Lưu tạm dữ liệu (Cờ is_synced = false)
+    isar --> app : Báo cáo lưu thành công cục bộ
+    app --> user : Hiển thị thông báo "Đã lưu offline"
+else Có kết nối mạng (Chế độ Microservices)
+    app -> app : Đính kèm Session JWT vào Header
+    app -> gateway : HTTP POST /transactions
+    gateway -> service : Reverse Proxy (Chuyển tiếp ẩn danh)
+    
+    service -> supabase : Thực thi lệnh Insert (Kèm JWT)
+    supabase -> supabase : Kiểm tra Row-Level Security (RLS)
+    supabase --> service : Trả kết quả (Mã giao dịch mới)
+    
+    service --> gateway : HTTP 200 OK (Thành công)
+    gateway --> app : HTTP 200 OK
+    app -> isar : Đồng bộ lưu đệm (Cache) xuống máy
+    app --> user : Cập nhật UI "Lưu thành công"
+end
+
+@enduml

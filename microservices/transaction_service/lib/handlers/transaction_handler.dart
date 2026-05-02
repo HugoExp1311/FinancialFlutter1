@@ -1,81 +1,125 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:shelf/shelf.dart';
+import 'package:core_domain/core_domain.dart';
 
-/// [TransactionHandler] — Xử lý HTTP requests cho Transaction Resource.
-///
-/// Hiện tại là STUB (trả về mock data). Khi đi sâu vào Bước 3:
-///   1. Inject `ITransactionRepository` (sẽ dùng Supabase trực tiếp hoặc PostgreSQL)
-///   2. Inject Use Cases từ `core_domain`
-///   3. Map JSON ↔ TransactionEntity
-///
-/// Ví dụ flow đầy đủ sau này:
-///   POST /transactions
-///     → parse JSON body → TransactionEntity
-///     → AddTransactionUseCase.execute(entity)
-///     → return 201 Created
 class TransactionHandler {
-  // --- HEALTH CHECK ---
+  final ITransactionRepository repository;
+  final AddTransactionUseCase addUseCase;
+  final UpdateTransactionUseCase updateUseCase;
+  final DeleteTransactionUseCase deleteUseCase;
+
+  TransactionHandler({
+    required this.repository,
+    required this.addUseCase,
+    required this.updateUseCase,
+    required this.deleteUseCase,
+  });
+
+  /// Hàm trích xuất token từ Authorization Header của App Mobile gửi qua
+  String? _extractToken(Request request) {
+    final authHeader = request.headers['authorization'] ?? request.headers['Authorization'];
+    if (authHeader != null && authHeader.startsWith('Bearer ')) {
+      return authHeader.substring(7);
+    }
+    return null;
+  }
 
   Future<Response> health(Request request) async {
-    return _jsonResponse({'status': 'ok', 'service': 'transaction-service'});
+    return _jsonResponse({'status': 'ok', 'service': 'transaction-service', 'rls_forward_auth': true});
   }
-
-  // --- GET /transactions ---
 
   Future<Response> getTransactions(Request request) async {
-    // TODO: Inject SyncTransactionsUseCase + ITransactionRepository
-    // TODO: Lấy user_id từ JWT token trong Authorization header
-    return _jsonResponse([
-      {
-        'sync_id': 'stub-uuid-001',
-        'amount': 50000.0,
-        'is_expense': true,
-        'category_name': 'Food',
-        'category_icon_code': 0xe56c,
-        'category_color_hex': 0xFFFF5722,
-        'note': 'Phở bò sáng',
-        'date': '2026-03-24T07:30:00.000Z',
-        'updated_at': '2026-03-24T07:30:00.000Z',
-        'is_deleted': false,
+    final token = _extractToken(request);
+    
+    // Gói luồng thực thi vào 1 Zone chứa token, Repository ở tầng đáy có thể móc token này ra!
+    return await runZoned(() async {
+      try {
+        final transactions = await repository.getTransactions();
+        final data = transactions.map((t) => {
+          'sync_id': t.syncId,
+          'amount': t.amount,
+          'is_expense': t.isExpense,
+          'date': t.date.toIso8601String(),
+          'note': t.note,
+          'category_name': t.categoryName,
+          'category_icon_code': t.categoryIconCode,
+          'category_color_hex': t.categoryColorHex,
+          'updated_at': t.updatedAt.toIso8601String(),
+          'is_deleted': t.isDeleted,
+        }).toList();
+        return _jsonResponse(data);
+      } catch (e) {
+        return _jsonResponse({'error': e.toString()}, status: 500);
       }
-    ]);
+    }, zoneValues: {#token: token});
   }
-
-  // --- POST /transactions ---
 
   Future<Response> createTransaction(Request request) async {
-    // TODO: Parse body → TransactionEntity → AddTransactionUseCase.execute()
-    final body = await request.readAsString();
-    final data = jsonDecode(body) as Map<String, dynamic>;
+    final token = _extractToken(request);
+    return await runZoned(() async {
+      try {
+        final body = await request.readAsString();
+        final data = jsonDecode(body) as Map<String, dynamic>;
 
-    // Validation ngắn gọn (Use Case sẽ validate đầy đủ khi implement)
-    if (data['amount'] == null || (data['amount'] as num) <= 0) {
-      return _jsonResponse({'error': 'amount must be positive'}, status: 400);
-    }
+        await addUseCase.execute(
+          amount: (data['amount'] as num).toDouble(),
+          isExpense: data['is_expense'] as bool,
+          date: DateTime.parse(data['date'] as String),
+          note: data['note'] as String?,
+          categoryName: data['category_name'] as String,
+          categoryIconCode: data['category_icon_code'] as int,
+          categoryColorHex: data['category_color_hex'] as int,
+        );
 
-    // Stub response — trả lại chính data đã nhận
-    return _jsonResponse({'message': 'created', 'data': data}, status: 201);
+        return _jsonResponse({'message': 'created successfully'}, status: 201);
+      } catch (e) {
+        return _jsonResponse({'error': e.toString()}, status: 400);
+      }
+    }, zoneValues: {#token: token});
   }
-
-  // --- PUT /transactions/<syncId> ---
 
   Future<Response> updateTransaction(Request request, String syncId) async {
-    // TODO: Inject UpdateTransactionUseCase
-    final body = await request.readAsString();
-    final data = jsonDecode(body) as Map<String, dynamic>;
-    return _jsonResponse({'message': 'updated', 'sync_id': syncId, 'data': data});
-  }
+    final token = _extractToken(request);
+    return await runZoned(() async {
+      try {
+        final body = await request.readAsString();
+        final data = jsonDecode(body) as Map<String, dynamic>;
 
-  // --- DELETE /transactions/<syncId> ---
+        final existingTx = await repository.getTransactionBySyncId(syncId);
+        if (existingTx == null) {
+          return _jsonResponse({'error': 'Not found'}, status: 404);
+        }
+
+        await updateUseCase.execute(
+          existingTx,
+          amount: (data['amount'] as num?)?.toDouble(),
+          isExpense: data['is_expense'] as bool?,
+          date: data['date'] != null ? DateTime.parse(data['date'] as String) : null,
+          note: data['note'] as String?,
+          categoryName: data['category_name'] as String?,
+          categoryIconCode: data['category_icon_code'] as int?,
+          categoryColorHex: data['category_color_hex'] as int?,
+        );
+
+        return _jsonResponse({'message': 'updated', 'sync_id': syncId});
+      } catch (e) {
+        return _jsonResponse({'error': e.toString()}, status: 400);
+      }
+    }, zoneValues: {#token: token});
+  }
 
   Future<Response> deleteTransaction(Request request, String syncId) async {
-    // TODO: Inject DeleteTransactionUseCase
-    return _jsonResponse({'message': 'soft-deleted', 'sync_id': syncId});
+    final token = _extractToken(request);
+    return await runZoned(() async {
+      try {
+        await deleteUseCase.execute(syncId);
+        return _jsonResponse({'message': 'soft-deleted', 'sync_id': syncId});
+      } catch (e) {
+        return _jsonResponse({'error': e.toString()}, status: 400);
+      }
+    }, zoneValues: {#token: token});
   }
-
-  // ---------------------------------------------------------------------------
-  // HELPER
-  // ---------------------------------------------------------------------------
 
   Response _jsonResponse(dynamic body, {int status = 200}) {
     return Response(

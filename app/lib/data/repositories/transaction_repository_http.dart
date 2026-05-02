@@ -1,84 +1,131 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:core_domain/core_domain.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// [TransactionRepositoryHttp] — Implementation thứ 2 của [ITransactionRepository].
-///
-/// Dành cho phiên bản MICROSERVICES (Môn học 2).
-/// Thay vì gọi Isar/Supabase trực tiếp, mọi thao tác đều là HTTP call
-/// đến `transaction_service` backend.
-///
-/// Để KÍCH HOẠT phiên bản Microservices:
-///   Vào `app_providers.dart`, đổi dòng trong `transactionRepositoryProvider`:
-///
-///   // TẮT Monolith:
-///   // return TransactionRepositoryImpl(isar, supabase);
-///
-///   // BẬT Microservices:
-///   return TransactionRepositoryHttp(baseUrl: 'http://localhost:8080');
-///
-/// ⚠️ Hiện tại là SKELETON — tất cả method đều throw UnimplementedError.
-///    Triển khai chi tiết sẽ thực hiện ở Bước 3 (giai đoạn 2).
 class TransactionRepositoryHttp implements ITransactionRepository {
   final String baseUrl;
 
-  // TODO: Inject http.Client để dễ mock trong unit tests
-  // final http.Client _client;
-
   TransactionRepositoryHttp({required this.baseUrl});
 
+  Future<Map<String, String>> _getHeaders() async {
+    final session = Supabase.instance.client.auth.currentSession;
+    final token = session?.accessToken;
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  TransactionEntity _fromJson(Map<String, dynamic> json) {
+    return TransactionEntity(
+      syncId: json['sync_id'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      isExpense: json['is_expense'] as bool,
+      date: DateTime.parse(json['date'] as String),
+      note: json['note'] as String?,
+      categoryName: json['category_name'] as String,
+      categoryIconCode: json['category_icon_code'] as int,
+      categoryColorHex: json['category_color_hex'] as int,
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+      isSynced: true,
+      isDeleted: json['is_deleted'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> _toJson(TransactionEntity t) {
+    return {
+      'sync_id': t.syncId,
+      'amount': t.amount,
+      'is_expense': t.isExpense,
+      'date': t.date.toIso8601String(),
+      'note': t.note,
+      'category_name': t.categoryName,
+      'category_icon_code': t.categoryIconCode,
+      'category_color_hex': t.categoryColorHex,
+      'updated_at': t.updatedAt.toIso8601String(),
+    };
+  }
+
   @override
-  Stream<List<TransactionEntity>> watchTransactions() {
-    // NOTE: HTTP không hỗ trợ reactive stream tự nhiên.
-    // Phương án: Polling (gọi getTransactions() mỗi N giây)
-    //           hoặc WebSocket / SSE (Server-Sent Events).
-    // TODO: Implement polling stream hoặc WebSocket connection
-    throw UnimplementedError('watchTransactions — TODO in Bước 3');
+  Stream<List<TransactionEntity>> watchTransactions() async* {
+    while (true) {
+      try {
+        final txs = await getTransactions();
+        yield txs;
+      } catch (e) {
+        yield [];
+      }
+      await Future.delayed(const Duration(seconds: 5));
+    }
   }
 
   @override
   Future<List<TransactionEntity>> getTransactions() async {
-    // TODO:
-    // final response = await _client.get(Uri.parse('$baseUrl/transactions'));
-    // final List data = jsonDecode(response.body);
-    // return data.map((row) => _mapRowToEntity(row)).toList();
-    throw UnimplementedError('getTransactions — TODO in Bước 3');
+    final url = Uri.parse('$baseUrl/transactions');
+    final response = await http.get(url, headers: await _getHeaders());
+
+    if (response.statusCode == 200) {
+      final List<dynamic> body = jsonDecode(response.body);
+      return body.map((e) => _fromJson(e as Map<String, dynamic>)).toList();
+    } else {
+      throw Exception('Failed to load transactions: ${response.body}');
+    }
   }
 
   @override
   Future<TransactionEntity?> getTransactionBySyncId(String syncId) async {
-    // TODO: GET $baseUrl/transactions/$syncId
-    throw UnimplementedError('getTransactionBySyncId — TODO in Bước 3');
+    final all = await getTransactions();
+    try {
+      return all.firstWhere((element) => element.syncId == syncId);
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
   Future<void> addTransaction(TransactionEntity transaction) async {
-    // TODO:
-    // final body = jsonEncode(_mapEntityToJson(transaction));
-    // await _client.post(Uri.parse('$baseUrl/transactions'), body: body, ...);
-    throw UnimplementedError('addTransaction — TODO in Bước 3');
+    final url = Uri.parse('$baseUrl/transactions');
+    final response = await http.post(
+      url,
+      headers: await _getHeaders(),
+      body: jsonEncode(_toJson(transaction)),
+    );
+
+    if (response.statusCode != 201 && response.statusCode != 200) {
+      throw Exception('Failed to add transaction: ${response.body}');
+    }
   }
 
   @override
   Future<void> updateTransaction(TransactionEntity transaction) async {
-    // TODO: PUT $baseUrl/transactions/${transaction.syncId}
-    throw UnimplementedError('updateTransaction — TODO in Bước 3');
+    final url = Uri.parse('$baseUrl/transactions/${transaction.syncId}');
+    final response = await http.put(
+      url,
+      headers: await _getHeaders(),
+      body: jsonEncode(_toJson(transaction)),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update transaction: ${response.body}');
+    }
   }
 
   @override
   Future<void> deleteTransaction(String syncId) async {
-    // TODO: DELETE $baseUrl/transactions/$syncId
-    throw UnimplementedError('deleteTransaction — TODO in Bước 3');
+    final url = Uri.parse('$baseUrl/transactions/$syncId');
+    final response = await http.delete(
+      url,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete transaction: ${response.body}');
+    }
   }
 
   @override
   Future<void> syncAll() async {
-    // NOTE: Microservices không cần syncAll() theo nghĩa Offline-First.
-    // Mọi thao tác đã real-time qua HTTP — đây là no-op.
+    // No-op for HTTP repository
   }
-
-  // ---------------------------------------------------------------------------
-  // PRIVATE HELPERS (TODO — sẽ implement khi đi sâu)
-  // ---------------------------------------------------------------------------
-
-  // TransactionEntity _mapRowToEntity(Map<String, dynamic> row) { ... }
-  // Map<String, dynamic> _mapEntityToJson(TransactionEntity entity) { ... }
 }

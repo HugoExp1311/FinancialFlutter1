@@ -23,7 +23,7 @@ void main(List<String> args) async {
     try {
       // Bắn payload xang thẳng link Webhook n8n
       final response = await http.post(
-        Uri.parse('http://localhost:5678/webhook/ai-chat'),
+        Uri.parse('http://host.docker.internal:5678/webhook/ai-chat'),
         headers: {'Content-Type': 'application/json'},
         body: payload,
       );

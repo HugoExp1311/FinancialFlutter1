@@ -1,0 +1,40 @@
+@startuml
+skinparam dpi 150
+autonumber
+
+actor "Người dùng" as user
+participant "Flutter App" as app
+participant "API Gateway\n(Nginx)" as gateway
+participant "Chatbot Service\n(Dart)" as chat
+participant "n8n Workflow\n(Orchestrator)" as n8n
+database "Supabase\n(PostgreSQL)" as supabase
+participant "Groq API\n(Llama-3 LLM)" as groq
+
+user -> app : Gửi tin nhắn ("Tháng này tôi tiêu bao nhiêu?")
+app -> gateway : HTTP POST /chat (Kèm JWT & Message)
+gateway -> chat : Định tuyến nội bộ
+chat -> n8n : Kích hoạt Webhook (Truyền Payload)
+
+n8n -> groq : Gửi Prompt 1: Phân loại ý định (Router)
+groq --> n8n : Trả về Intent (Insert / Analyze)
+
+alt Trường hợp Intent == "Insert" (Ghi chép thu chi)
+    n8n -> n8n : Bóc tách Data (Số tiền, Danh mục)
+    n8n -> supabase : Gọi API Insert giao dịch
+    supabase --> n8n : Xác nhận lưu thành công
+    n8n -> n8n : Sinh câu trả lời ("Đã lưu giao dịch")
+    
+else Trường hợp Intent == "Analyze" (Tư vấn tài chính)
+    n8n -> supabase : Truy vấn lịch sử giao dịch (SQL)
+    supabase --> n8n : Trả về mảng dữ liệu lịch sử (JSON)
+    n8n -> n8n : Context Injection (Tính toán & Ép ngữ cảnh)
+    n8n -> groq : Gửi Prompt 2 (Ngữ cảnh + Câu hỏi người dùng)
+    groq --> n8n : Trả về câu trả lời phân tích tài chính
+end
+
+n8n --> chat : HTTP 200 (AI Message Text)
+chat --> gateway : Chuyển tiếp Response
+gateway --> app : Trả kết quả về Client
+app --> user : Hiển thị tin nhắn của AI trên màn hình
+
+@enduml

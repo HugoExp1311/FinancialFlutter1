@@ -1,0 +1,661 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        3312,
+        448
+      ],
+      "id": "1af94504-a8a9-485d-92d5-c51bdadb8088",
+      "name": "Webhook",
+      "webhookId": "d88a6b11-713c-4d3b-81db-9d82430a3447"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Bạn là điều phối viên tài chính. Nhiệm vụ duy nhất là phân tích tin nhắn và điều hướng.\nChỉ chọn 1 trong 2 loại nhiệm vụ:\n1. insert: Khi người dùng muốn ghi chép thu nhập/chi tiêu rõ ràng (Ví dụ: \"cơm tấm 35k\", \"lương về 20 củ\", \"đổ xăng 50k\").\n2. analyze: Tất cả các trường hợp còn lại bao gồm: hỏi đáp thống kê, tư vấn tài chính, chào hỏi, tâm sự, than nghèo kể khổ, hoặc chửi bới.\n🎯 QUY TẮC TỐI THƯỢNG:\n- BẮT BUỘC trả về DUY NHẤT JSON.\n- KHÔNG giải thích, không thêm ký tự thừa ngoài JSON.\n- Định dạng: {\"route\": \"insert\"} hoặc {\"route\": \"analyze\"}"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        3504,
+        448
+      ],
+      "id": "9580b6ec-3f32-4dcd-88af-f6f511651f13",
+      "name": "Supervisor Router"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.route }} ",
+                    "rightValue": "=insert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "69e2ba00-7afa-4848-8bbd-31aa094303a4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Route Insert Data"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "id": "60a80c64-2368-4412-8959-7c0f9f1165ea",
+                    "leftValue": "={{ $json.output.route }} ",
+                    "rightValue": "insert",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Route Analyst Ai"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.1,
+      "position": [
+        3824,
+        464
+      ],
+      "id": "2a055950-2633-4a7c-a581-6fbceac94f67",
+      "name": "Switch Router"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.message }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Bạn là AI Quản Lý Tài Chính Cá Nhân NGHIÊM KHẮC nhưng THÔNG MINH.  \n🎯 NGUYÊN TẮC TỐI THƯỢNG: \n- KHÔNG ĐƯỢC TỰ BỊA SỐ TIỀN. \n- CHỈ xử lý khi thông tin rõ ràng. \n- Nếu có bất kỳ sự mơ hồ nào về số tiền hoặc đơn vị → PHẢI hỏi lại (chuyển LUỒNG 2).  Bạn bắt buộc phải chọn 1 trong 2 LUỒNG và trả về DUY NHẤT 1 JSON.\n-------------------------------------------------- 🧠 BƯỚC 1: PHÂN TÍCH INPUT  \n1. Có hành động thu/chi không? \n2. Có số tiền không? \n3. Số tiền có rõ đơn vị không? \n-------------------------------------------------- 💰 QUY TẮC NHẬN DIỆN & QUY ĐỔI TIỀN  \n✅ CHỈ QUY ĐỔI KHI CHẮC CHẮN 100%:  \n1. Nếu có ký hiệu: - \"k\", \"nghìn\",\"ngàn\", \"củ\", \"đ\", \"VND\", \"xị\", \"lít\", \"cành\" → hiểu là VND \n2. Nếu có ký hiệu: \"$\", \"usd\", \"đô\" → hiểu là USD  \n3. Quy đổi: \n- Nếu là tiền Việt → đổi sang USD bằng công thức:   amount_usd = số_tiền_VND / 25000 \n- Nếu là USD → GIỮ NGUYÊN  \n❌ KHÔNG CHẮC CHẮN → KHÔNG ĐOÁN: - \"ăn 300\" - \"nhận 100\" → KHÔNG BIẾT đơn vị → chuyển LUỒNG 2  \n-------------------------------------------------- 🏷️ ĐỊNH NGHĨA DANH MỤC (Bắt buộc dùng quy tắc này để Map Category, KHÔNG TỰ HIỂU SAI): Cảnh báo: Lỗi phổ biến là nhầm \"Food\" thành \"Bills\". Hóa đơn ăn uống phải luôn được xếp vào \"Food\", chỉ hóa đơn dịch vụ định kỳ mới xếp vào \"Bills\"! - \"Food\": Ăn sáng, nhậu, bún phở, siêu thị mua thịt rau lá, đi nhà hàng michelin, v.v. (Dù khách có xài chữ 'Thanh toán tiền bún đậu' thì vẫn phải gán vào Food). - \"Bills\": Hóa đơn định kỳ hàng tháng (Hóa đơn điện, nước, tiền mạng, Netflix, Youtube Premium, Trả nợ). - \"Transport\": Đổ xăng, gửi xe, Grab, taxi, bảo dưỡng, thay nhớt. - \"Shopping\": Mua sắm quần áo, điện thoại, đồ cá nhân, shopee. - \"Salary\": Nhận lương tháng. - \"Rent\": Trả tiền thuê trọ, thuê nhà. - \"Invest\": Đầu tư, chứng khoán, mua vàng. - \"Other\": Không thuộc các cái trên.  \n-------------------------------------------------- [LUỒNG 1] TẠO GIAO DỊCH (Chỉ khi có ĐỦ: hành động + số tiền rõ ràng + đơn vị rõ ràng)  {   \"isValid\": true,   \"isExpense\": true (nếu là chi) hoặc false (nếu là thu),   \"amount\": SỐ TIỀN MỚI (CHỈ GHI SỐ ĐÃ QUY ĐỔI RA USD, Vd: 12 hoặc 5.5),   \"categoryName\": \"Food\" | \"Transport\" | \"Shopping\" | \"Bills\" | \"Salary\" | \"Invest\" | \"Rent\" | \"Other\",   \"note\": \"tóm tắt ngắn gọn\",   \"replyMessage\": \"💸 Câu báo cáo thân thiện, bắt buộc đính kèm số tiền USD đã xử lý. (Vd: Đã lưu 12$)\" }  \n-------------------------------------------------- \n[LUỒNG 2] GIAO TIẾP / HỎI ĐÁP  Kích hoạt khi:\n- Không có số tiền \n- Không rõ đơn vị \n- Chào hỏi / hỏi thống kê / chửi \n- Input mơ hồ  Ngày giờ hiện tại: {{ $json.body.current_date }} Sổ thu chi lịch sử (USD): {{ $json.body.history }}  {   \"isValid\": false,   \"isExpense\": false,   \"amount\": 0,   \"categoryName\": \"Other\",   \"note\": \"\",   \"replyMessage\": \"Tùy tình huống: 1. Nếu chào -> 'Chào bạn! Hãy nhập giao dịch kèm số tiền (VD: ăn phở 30k hoặc 5$)'. 2. Thiếu tiền -> 'Bạn vui lòng cho biết số tiền cụ thể nhé?'. 3. Mơ hồ đơn vị -> 'Số tiền này là VND hay USD vậy?'. 4. Hỏi thống kê -> Đọc History ở trên và làm toán.\" } \n-------------------------------------------------- 🛑 LUẬT CUỐI: - Ưu tiên ĐÚNG hơn THÔNG MINH - Không chắc → hỏi - Không bao giờ tự suy đoán số tiền"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        4048,
+        256
+      ],
+      "id": "7ad98229-29e1-435c-b152-d338477598bc",
+      "name": "Data Clerk"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\"type\":\"object\",\"properties\":{\"isValid\":{\"type\":\"boolean\",\"description\":\"true nếu đây là giao dịch tài chính hợp lệ\"},\"isExpense\":{\"type\":\"boolean\",\"description\":\"true nếu là chi tiêu, false nếu là thu nhập\"},\"amount\":{\"type\":\"number\",\"description\":\"Số tiền, luôn dương\"},\"categoryName\":{\"type\":\"string\",\"enum\":[\"Food\",\"Transport\",\"Shopping\",\"Bills\",\"Salary\",\"Invest\",\"Rent\",\"Other\"],\"description\":\"Hạng mục giao dịch\"},\"note\":{\"type\":\"string\",\"description\":\"Tóm tắt nhanh bằng tiếng Việt\"},\"replyMessage\":{\"type\":\"string\",\"description\":\"Câu trả lời ngắn gọn cho người dùng\"}},\"required\":[\"isValid\",\"replyMessage\"]}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        4192,
+        352
+      ],
+      "id": "90af13f2-0ebf-4a53-8998-f5bb90842d84",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4048,
+        352
+      ],
+      "id": "88bb9caa-e594-42c3-a3df-7c8700a0ad13",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Hf67AO6LALmrE0yi",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Cướp toàn bộ dữ liệu của Não AI đẩy xuống\nconst data = $input.first().json.output;\n\n// 1. Chế tạo 1 cái máy nặn UUID thủ công bằng Toán Học (Lách luật chặn Crypto)\nfunction uuid() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\n// 2. Map Icon ngẫu nhiên để không bị App Crash\nconst iconMap = { 'Food': 0xe56c, 'Transport': 0xe1d4, 'Shopping': 0xf4d8, 'Bills': 0xef63, 'Salary': 0xe917, 'Invest': 0xe6e1, 'Rent': 0xf521, 'Other': 0xe838 };\nconst colorMap = { 'Food': 0xFFFF5722, 'Transport': 0xFF2196F3, 'Shopping': 0xFFE91E63, 'Bills': 0xFF9C27B0, 'Salary': 0xFF4CAF50, 'Invest': 0xFF009688, 'Rent': 0xFF3F51B5, 'Other': 0xFF9E9E9E };\nconst cat = data.categoryName || 'Other';\nconst now = new Date().toISOString();\n\n// Gom trọn gói đầy đủ gửi cho Supabase\nreturn [{\n  json: {\n    sync_id:              uuid(),  // Gọi hàm sinh mã \n    amount:               data.amount,\n    is_expense:           data.isExpense,\n    category_name:        cat,\n    category_icon_code:   iconMap[cat] || iconMap['Other'],\n    category_color_hex:   colorMap[cat] || colorMap['Other'],\n    note:                 data.note || null,\n    date:                 now,\n    updated_at:           now,\n    is_synced:            true,\n    is_deleted:           false,\n    replyMessage:         data.replyMessage,\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4544,
+        176
+      ],
+      "id": "c44cf23a-f531-4dcf-8660-74a315a7471c",
+      "name": "Prepare Payload"
+    },
+    {
+      "parameters": {
+        "tableId": "transactions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sync_id",
+              "fieldValue": "={{ $json.sync_id }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $('Webhook').item.json.body.user_id }}"
+            },
+            {
+              "fieldId": "amount",
+              "fieldValue": "={{ $json.amount }}"
+            },
+            {
+              "fieldId": "is_expense",
+              "fieldValue": "={{ $json.is_expense }}"
+            },
+            {
+              "fieldId": "category_name",
+              "fieldValue": "={{ $json.category_name }}"
+            },
+            {
+              "fieldId": "category_icon_code",
+              "fieldValue": "={{ $json.category_icon_code }}"
+            },
+            {
+              "fieldId": "category_color_hex",
+              "fieldValue": "={{ $json.category_color_hex }}"
+            },
+            {
+              "fieldId": "note",
+              "fieldValue": "={{ $json.note }}"
+            },
+            {
+              "fieldId": "date",
+              "fieldValue": "={{ $json.date }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $json.updated_at }}"
+            },
+            {
+              "fieldId": "is_synced",
+              "fieldValue": "={{ $json.is_synced }}"
+            },
+            {
+              "fieldId": "is_deleted",
+              "fieldValue": "={{ $json.is_deleted }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4704,
+        176
+      ],
+      "id": "b67c4ddf-843b-40d9-bb37-07d445afddaf",
+      "name": "Insert to Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "1QyRgWxZJksBNnW5",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"replyMessage\": \"{{ $('Prepare Payload').item.json.replyMessage }}\"\n}\n",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4864,
+        336
+      ],
+      "id": "d2c3c8c9-6391-412f-8184-eca96f7f8ccf",
+      "name": "Respond Webhook (Inserted)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Câu hỏi/Yêu cầu: {{ $('Webhook').first().json.body.message }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Bạn là cố vấn tài chính thông minh. Bạn được cung cấp lịch sử giao dịch (USD) để trả lời người dùng.    📅 Dữ liệu hiện có:   - Ngày hiện tại: {{ $json.body.current_date }}   - Lịch sử chi tiêu: {{ $json.body.history }}    Nhiệm vụ:   1. Làm toán chính xác từ lịch sử được cung cấp.   2. Trả lời bằng tiếng Việt, phong cách chuyên nghiệp nhưng gần gũi.   3. Nếu người dùng hỏi lời khuyên, hãy dựa trên danh mục họ chi tiêu nhiều nhất để cảnh báo.   4. Nếu lịch sử trống, hãy báo người dùng hãy bắt đầu nhập giao dịch.\n\nBạn là Cố vấn Tài Chính Cá nhân Siêu Phàm (Bật mode chuyên gia tài chính).\nCô Thư ký Máy tính vừa chốt sổ cho bạn bản báo cáo Chính xác Nhất (Chữ màu đỏ là Máu của Khách Hàng):\n\n📊 KẾT QUẢ KẾ TOÁN (TUYỆT ĐỐI KHÔNG TÍNH TOÁN LẠI, DÙNG CON SỐ NÀY NGAY LẬP TỨC VÌ NÓ CHÍNH XÁC 100%):\n+ Tổng Thu Nhập: {{ $json.tong_thu }}\n+ Tổng Chi Tiêu: {{ $json.tong_chi }}\n+ Tình trạng Số Dư: {{ $json.so_du }} (Âm là Nợ, Dương là Tiết Kiệm)\n+ Chi tiết {{ $json.tong_so_giao_dich }} giao dịch gần nhất dưới đây:\n\n{{ $json.kich_ban_lich_su }}\n\n💬 CÂU TRÒ CHUYỆN HIỆN TẠI CỦA NGƯỜI DÙNG: \n{{ $('Webhook').first().json.body.message }}\n\nNHIỆM VỤ: Dựa trên dữ liệu kế toán và câu hỏi trên, hãy Replying (Phân tích, Mắng mỏ âu yếm, Động viên, Cho lời khuyên). Dùng Markdown cực đẹp và có chèn Biểu tượng Cảm xúc (Emojis) cho sướng mắt.\n"
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        4464,
+        480
+      ],
+      "id": "66c0d09a-67a9-442c-bb77-cee643b4f687",
+      "name": "Financial Analyst"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        4464,
+        640
+      ],
+      "id": "880f3ef5-4f76-4042-9b6f-92438b0f8c32",
+      "name": "Analyst Groq",
+      "credentials": {
+        "groqApi": {
+          "id": "Hf67AO6LALmrE0yi",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"route\": \"insert\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3648,
+        560
+      ],
+      "id": "3dc74f2d-1f6c-4532-b1fd-240db9fdee42",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.output) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4800,
+        528
+      ],
+      "id": "a2cded5d-26b8-4664-b75d-972d36daa195",
+      "name": "Respond Webhook (Analysis) "
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n \"replyMessage\": \"Xin chào, tôi là trợ lý tài chính đây!\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        4624,
+        640
+      ],
+      "id": "96ba3b5c-7fe4-43d9-80ee-484808cef848",
+      "name": "Structured Output Parser3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2c7d6b35-7293-4771-8fa2-d9891a4e5cc1",
+              "leftValue": "={{ $json.output.isValid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4368,
+        272
+      ],
+      "id": "e7ad2022-4c45-4e4f-97b7-d360d7d170a8",
+      "name": "If_OutputValid1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "transactions",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "user_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook').item.json.body.user_id }}"
+            },
+            {
+              "keyName": "is_deleted",
+              "condition": "eq",
+              "keyValue": "={{ false }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4128,
+        464
+      ],
+      "id": "7a865910-d885-4515-a23f-264e15cdde58",
+      "name": "Get Rows Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "1QyRgWxZJksBNnW5",
+          "name": "Supabase account"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Máy hút dữ liệu: Lôi toàn bộ data chảy từ Supabase sang\nconst txns = $input.all(); \n\nlet totalIncome = 0;\nlet totalExpense = 0;\nlet validTxnCount = 0; // Máy đếm số lượng giao dịch sống (Chưa xóa)\nlet historyStr = []; // Tờ giấy Note ghi lịch sử cho AI đọc\n\n// 2. Chạy Vòng lặp Cộng trừ siêu tốc\ntxns.forEach((row) => {\n    const data = row.json;\n\n    // 👉 Màng lọc Giao dịch Khóa/Bị Xóa Mềm \n    // Thêm ngoặc nhọn {} để diệt hẳn cảnh báo gạch đỏ của hệ thống n8n\n    if (data.is_deleted === true || data.isdeleted === true) {\n        return; \n    }\n\n    // Nếu lọt màng lưới (Giao dịch Sống), thì cộng 1 vào máy đếm\n    validTxnCount++;\n\n    const amount = Number(data.amount) || 0; \n    \n    // Nếu là chi tiêu\n    if (data.is_expense === true) {\n        totalExpense += amount;\n    } else {\n        totalIncome += amount; // Thu nhập\n    }\n\n    // Tiện thể nặn ra 1 dòng Dễ đọc cho con LLM nó khỏi đọc JSON hại não\n    const tBody = `- Ngày ${data.date ? data.date.substring(0,10) : 'N/A'}: [${data.category_name}] ${data.is_expense ? 'Chi' : 'Thu'} ${amount.toLocaleString('vi-VN')}vnđ (${data.note || 'Trống'})`;\n    historyStr.push(tBody);\n});\n\n// 3. Đóng đai chốt sổ: Trả về Báo cáo Kế toán Gọn Băng Đẹp Đẽ!\nreturn [{\n  json: {\n    tong_thu: totalIncome.toLocaleString('vi-VN') + \" đ\",\n    tong_chi: totalExpense.toLocaleString('vi-VN') + \" đ\",\n    so_du: (totalIncome - totalExpense).toLocaleString('vi-VN') + \" đ\",\n    tong_so_giao_dich: validTxnCount, // Đổi sang hiển thị đúng số Giao dịch Sống\n    kich_ban_lich_su: historyStr.join(\"\\n\") // Gộp thành đoạn văn bản xài dấu xuống dòng\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4304,
+        480
+      ],
+      "id": "f528dd1b-dc8f-42e9-97b7-136fd31e0ab3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        3472,
+        640
+      ],
+      "id": "3d871411-4844-4630-8128-f7661bb5004c",
+      "name": "Supevisor Groq",
+      "credentials": {
+        "groqApi": {
+          "id": "Hf67AO6LALmrE0yi",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Supervisor Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supervisor Router": {
+      "main": [
+        [
+          {
+            "node": "Switch Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Router": {
+      "main": [
+        [
+          {
+            "node": "Data Clerk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Rows Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Data Clerk",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Data Clerk",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Clerk": {
+      "main": [
+        [
+          {
+            "node": "If_OutputValid1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Payload": {
+      "main": [
+        [
+          {
+            "node": "Insert to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert to Supabase": {
+      "main": [
+        [
+          {
+            "node": "Respond Webhook (Inserted)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyst Groq": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Financial Analyst",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Financial Analyst": {
+      "main": [
+        [
+          {
+            "node": "Respond Webhook (Analysis) ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Supervisor Router",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser3": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Financial Analyst",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If_OutputValid1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Webhook (Inserted)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Rows Supabase": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Financial Analyst",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supevisor Groq": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Supervisor Router",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "8b5dcbd7-bb05-43ef-bb2d-7a7449f03bc9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "758b39c123aa29be1532b2db0760ab5b211a073b3cf32f37c7a3192bafacde50"
+  },
+  "id": "CBnwX1C5vjFqaCyn",
+  "tags": []
+}
