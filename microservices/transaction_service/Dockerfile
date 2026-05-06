@@ -16,8 +16,8 @@ RUN dart compile exe bin/server.dart -o bin/server
 # Chuyển sang image base siêu nhẹ để chạy production
 FROM debian:stable-slim
 
-# Cài đặt chứng chỉ gốc (Rất quan trọng để gửi HTTPS lên Supabase không bị lỗi SSL)
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+# Cài đặt chứng chỉ gốc và wget cho health checks
+RUN apt-get update && apt-get install -y ca-certificates wget && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/microservices/transaction_service/bin/server /app/bin/server
 
