@@ -44,7 +44,7 @@ services:
       - PORT=3002
       - HOST=0.0.0.0
       # Để dùng domain thật, bỏ comment dòng dưới và điền link webhook của bạn
-      # - N8N_WEBHOOK_URL=https://n8n.xxx.io.vn/webhook/ai-chat
+      # - N8N_WEBHOOK_URL=https://n8n.vault.io.vn/webhook/ai-chat
     env_file:
       - ../app/.env
     restart: unless-stopped
@@ -54,3 +54,10 @@ services:
 networks:
   finance_network:
     driver: bridge
+
+# NOTE: For production deployment, use docker-compose.prod.yml instead
+# Production file includes:
+# - Unique port (8765) for Cloudflare Tunnel
+# - Health checks for all services
+# - Production-grade nginx configuration
+# - Proper logging and restart policies

@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  # FLUTTER WEB APP - Frontend
+  flutter_web:
+    image: nginx:alpine
+    container_name: flutter_web_app_prod
+    volumes:
+      - ../app/build/web:/usr/share/nginx/html:ro
+      - ./flutter_web/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"     # Flutter web app port for Cloudflare Tunnel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # API GATEWAY - Nginx Reverse Proxy
+  api_gateway:
+    image: nginx:alpine
+    container_name: flutter_api_gateway_prod
+    volumes:
+      - ./api_gateway/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8765:80"     # API Gateway port for Cloudflare Tunnel
+    depends_on:
+      transaction_service:
+        condition: service_healthy
+      chatbot_service:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # TRANSACTION MICROSERVICE
+  transaction_service:
+    build:
+      context: ../
+      dockerfile: microservices/transaction_service/Dockerfile
+    container_name: flutter_transaction_service_prod
+    expose:
+      - "8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # CHATBOT AI SERVICE
+  chatbot_service:
+    build:
+      context: chatbot_service
+      dockerfile: Dockerfile
+    container_name: flutter_chatbot_service_prod
+    expose:
+      - "3002"
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - N8N_WEBHOOK_URL=https://n8n.vault.io.vn/webhook/ai-chat
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  finance_network:
+    driver: bridge
+    name: flutter_finance_network

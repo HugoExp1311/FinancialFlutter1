@@ -1,0 +1,12 @@
+# .gitignore additions for production files
+
+# Production environment files (contains secrets)
+.env.production
+
+# Docker volumes and data
+docker-compose.override.yml
+*.log
+
+# Backup files
+*.backup
+backup.tar.gz

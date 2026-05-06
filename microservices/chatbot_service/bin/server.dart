@@ -7,7 +7,14 @@ import 'package:http/http.dart' as http;
 void main(List<String> args) async {
   final router = Router();
 
-  // Route 1: Đường dẫn Test sức khoẻ của Chatbot
+  // Route 1: Đường dẫn Test sức khoẻ của Chatbot (cho Docker health check)
+  router.get('/health', (Request request) {
+    return Response.ok(
+        '{"status": "healthy", "service": "chatbot_service", "version": "1.0.0"}',
+        headers: {'Content-Type': 'application/json'});
+  });
+
+  // Route 2: Health check với path đầy đủ (backward compatibility)
   router.get('/chat/health', (Request request) {
     print('[Chatbot Service] Có người gõ cửa phòng Health Check!');
     return Response.ok(
@@ -15,7 +22,7 @@ void main(List<String> args) async {
         headers: {'Content-Type': 'application/json'});
   });
 
-  // Route 2: Chỗ này hứng Data từ ĐT -> Xử lý mông má -> Bắn sang N8N
+  // Route 3: Chỗ này hứng Data từ ĐT -> Xử lý mông má -> Bắn sang N8N
   router.post('/chat/send', (Request request) async {
     final payload = await request.readAsString();
     print('[Chatbot Service 🤖] Vừa nhận được tin nhắn từ Cổng Gateway dội xuống!');
@@ -45,8 +52,9 @@ void main(List<String> args) async {
   // Mặc giáp (Middleware báo Log)
   var pipeline = Pipeline().addMiddleware(logRequests()).addHandler(router.call);
 
-  // Chạy trên cổng 3002 (Chuẩn quy hoạch của Gateway)
-  final server = await serve(pipeline, InternetAddress.anyIPv4, 3002);
+  // Chạy trên cổng từ biến môi trường (mặc định 3002)
+  final port = int.parse(Platform.environment['PORT'] ?? '3002');
+  final server = await serve(pipeline, InternetAddress.anyIPv4, port);
   print('===================================================');
   print('🤖 CHATBOT SERVICE ĐANG CHỜ LỆNH (Port: ${server.port})');
   print('===================================================');
