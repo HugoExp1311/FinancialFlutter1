@@ -59,7 +59,7 @@ services:
       - HOST=0.0.0.0
       - NODE_ENV=production
     env_file:
-      - .env.production
+      - ../app/.env                 # Single source of truth!
     restart: unless-stopped
     networks:
       - finance_network
@@ -89,7 +89,7 @@ services:
       - NODE_ENV=production
       - N8N_WEBHOOK_URL=https://n8n.vault.io.vn/webhook/ai-chat
     env_file:
-      - .env.production
+      - ../app/.env                 # Single source of truth!
     restart: unless-stopped
     networks:
       - finance_network
