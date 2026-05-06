@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -23,7 +23,8 @@ class ProfileScreen extends ConsumerWidget {
       final userId = supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      final file = File(image.path);
+      // Đọc file dưới dạng Bytes (Uint8List) để tương thích cả Web và Mobile
+      final bytes = await image.readAsBytes();
       final fileExt = image.path.split('.').last;
 
       // Khởi tạo timestamp để link hình ảnh không bị dính cache
@@ -31,12 +32,11 @@ class ProfileScreen extends ConsumerWidget {
       final path = '$userId/$fileName';
 
       // Upload file vào Storage bucket có tên là 'avatar'
-      // YÊU CẦU: Bạn phải tạo một bucket tên là 'avatar' trong Supabase Storage và set public = true
       await supabase.storage
           .from('avatar')
-          .upload(
+          .uploadBinary(
             path,
-            file,
+            bytes,
             fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
           );
 
@@ -60,7 +60,19 @@ class ProfileScreen extends ConsumerWidget {
         address: currentProfileRes?.address,
       );
 
+      // Cập nhật Local DB
       await repository.updateUserProfile(updatedEntity);
+
+      // Cập nhật CỨNG trực tiếp lên Supabase ngay tại đây để bắt lỗi RLS nếu có
+      final data = {
+        'id': userId,
+        'first_name': updatedEntity.firstName,
+        'last_name': updatedEntity.lastName,
+        'avatar_url': updatedEntity.avatarUrl,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      
+      await supabase.from('user_profile').upsert(data);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -178,12 +190,15 @@ class ProfileScreen extends ConsumerWidget {
               isDanger: true,
               onTap: () async {
                 final supabase = ref.read(supabaseProvider);
-                final isar = ref.read(isarProvider);
-
                 await supabase.auth.signOut();
-                await isar.writeTxn(() async {
-                  await isar.clear();
-                });
+
+                // Chỉ thực hiện xoá CSDL Isar nếu không phải nền tảng Web
+                if (!kIsWeb) {
+                  final isar = ref.read(isarProvider);
+                  await isar.writeTxn(() async {
+                    await isar.clear();
+                  });
+                }
               },
             ),
             const SizedBox(height: 24),

@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
 import 'package:app/data/repositories/user_profile_repository_impl.dart';
 import 'package:app/data/repositories/transaction_repository_http.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
+import 'package:app/data/repositories/user_profile_repository_web.dart';
 
 // =============================================================================
 // INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
@@ -47,8 +49,11 @@ final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
 });
 
 final userProfileRepositoryProvider = Provider<IUserProfileRepository>((ref) {
-  final isar = ref.watch(isarProvider);
   final supabase = ref.watch(supabaseProvider);
+  if (kIsWeb) {
+    return UserProfileRepositoryWeb(supabase);
+  }
+  final isar = ref.watch(isarProvider);
   return UserProfileRepositoryImpl(isar, supabase);
 });
 

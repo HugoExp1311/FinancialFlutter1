@@ -21,9 +21,13 @@ void main(List<String> args) async {
     print('[Chatbot Service 🤖] Vừa nhận được tin nhắn từ Cổng Gateway dội xuống!');
     
     try {
-      // Bắn payload xang thẳng link Webhook n8n
+      // Lấy URL Webhook từ file cấu hình (nếu có), nếu không có thì xài mặc định localhost
+      final webhookUrl = Platform.environment['N8N_WEBHOOK_URL'] ?? 'http://host.docker.internal:5678/webhook/ai-chat';
+      print('[Chatbot Service 🤖] Đang rẽ nhánh tin nhắn sang não AI tại: $webhookUrl');
+
+      // Bắn payload sang thẳng link Webhook n8n
       final response = await http.post(
-        Uri.parse('http://host.docker.internal:5678/webhook/ai-chat'),
+        Uri.parse(webhookUrl),
         headers: {'Content-Type': 'application/json'},
         body: payload,
       );

@@ -54,6 +54,7 @@ class TransactionRepositoryHttp implements ITransactionRepository {
         final txs = await getTransactions();
         yield txs;
       } catch (e) {
+        print('🚨 HTTP GET Error: $e'); // In lỗi ra Console
         yield [];
       }
       await Future.delayed(const Duration(seconds: 5));

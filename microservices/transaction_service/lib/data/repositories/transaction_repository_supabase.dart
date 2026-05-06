@@ -14,6 +14,7 @@ class TransactionRepositorySupabase implements ITransactionRepository {
   /// có đính kèm JWT Token của chính xác Request đang gọi tới.
   PostgrestClient get _db {
     final token = Zone.current[#token] as String?;
+    print('🔑 [Transaction DB] Token present: ${token != null}');
     
     return PostgrestClient(
       '$supabaseUrl/rest/v1',

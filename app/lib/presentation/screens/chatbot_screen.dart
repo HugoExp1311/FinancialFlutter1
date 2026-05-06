@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:io';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
@@ -147,12 +148,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     //     .join(" | ");
 
     try {
-      final client = HttpClient();
-      // Bắn lệnh POST lên Cổng test của Docker n8n
-      final request = await client.postUrl(
-        Uri.parse('http://localhost:5678/webhook/ai-chat'),
-      );
-      request.headers.set('Content-Type', 'application/json');
       // Bọc dán dữ liệu vào thùng JSON
       final payload = {
         'message': text,
@@ -165,11 +160,17 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       // Xóa bộ nhớ tạm của ảnh sau khi đã gói hàng xong để không bị gửi kèm vào câu chat chữ tiếp theo
       _base64Image = null;
 
-      request.add(utf8.encode(jsonEncode(payload)));
+      // Lấy URL Gateway từ biến môi trường
+      final baseUrl = dotenv.env['MICROSERVICE_URL'] ?? 'http://localhost:3000';
+      
+      // Bắn lệnh POST lên Cổng API Gateway (tránh lỗi CORS và để Gateway định tuyến)
+      final response = await http.post(
+        Uri.parse('$baseUrl/chat/send'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      );
 
-      // Chờ AI n8n trả kết quả về
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
+      final responseBody = response.body;
 
       if (mounted) {
         setState(() {
@@ -246,6 +247,15 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         centerTitle: true,
         elevation: 1,
         backgroundColor: Theme.of(context).cardTheme.color,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_rounded, color: AppTheme.expenseColor),
+            tooltip: 'Xóa đoạn chat',
+            onPressed: () {
+              ref.read(chatMessagesProvider.notifier).clear();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

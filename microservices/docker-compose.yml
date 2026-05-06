@@ -43,6 +43,10 @@ services:
     environment:
       - PORT=3002
       - HOST=0.0.0.0
+      # Để dùng domain thật, bỏ comment dòng dưới và điền link webhook của bạn
+      # - N8N_WEBHOOK_URL=https://n8n.xxx.io.vn/webhook/ai-chat
+    env_file:
+      - ../app/.env
     restart: unless-stopped
     networks:
       - finance_network

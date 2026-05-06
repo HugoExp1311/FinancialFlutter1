@@ -45,34 +45,8 @@ void main() async {
 
   final pipeline = const Pipeline()
       .addMiddleware(logRequests())
-      .addMiddleware(_corsMiddleware())
       .addHandler(router.call);
 
   final server = await shelf_io.serve(pipeline, host, port);
   print('✅ Transaction Service running at http://${server.address.host}:${server.port}');
 }
-
-Middleware _corsMiddleware() {
-  return (Handler inner) {
-    return (Request request) async {
-      if (request.method == 'OPTIONS') {
-        return Response.ok('', headers: _corsHeaders);
-      }
-      try {
-        final response = await inner(request);
-        return response.change(headers: _corsHeaders);
-      } catch (e) {
-        return Response.internalServerError(
-          body: '{"error": "${e.toString().replaceAll('"', '\\"')}"}',
-          headers: {..._corsHeaders, 'Content-Type': 'application/json'}
-        );
-      }
-    };
-  };
-}
-
-const _corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};

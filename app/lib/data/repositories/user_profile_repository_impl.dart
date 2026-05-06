@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/models/app_user_profile.dart';
@@ -86,7 +86,10 @@ class UserProfileRepositoryImpl implements IUserProfileRepository {
             .userIdEqualTo(userId)
             .findFirst();
 
-        final cloudUpdatedAt = DateTime.parse(response['updated_at']);
+        final cloudDateStr = response['updated_at'];
+        final cloudUpdatedAt = cloudDateStr != null 
+            ? DateTime.tryParse(cloudDateStr.toString()) ?? DateTime.fromMillisecondsSinceEpoch(0)
+            : DateTime.fromMillisecondsSinceEpoch(0);
 
         if (existing == null || existing.updatedAt.isBefore(cloudUpdatedAt)) {
           final p = existing ?? AppUserProfile();
