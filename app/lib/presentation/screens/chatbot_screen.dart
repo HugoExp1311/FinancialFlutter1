@@ -6,7 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:image_picker/image_picker.dart'; // Thêm dòng này để sử dụng ImagePicker
+import 'package:image_picker/image_picker.dart';
+import '../providers/language_provider.dart'; 
+import '../utils/app_translations.dart'; 
 
 class ChatMessage {
   final String text;
@@ -16,12 +18,13 @@ class ChatMessage {
 }
 
 class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
+  static const String introKey = 'intro_message_key';
+
   @override
   List<ChatMessage> build() {
     return [
       ChatMessage(
-        text:
-            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn nghe được ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
+        text: introKey, // Lưu dưới dạng Key để dịch ở UI
         isUser: false,
       ),
     ];
@@ -34,8 +37,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   void clear() {
     state = [
       ChatMessage(
-        text:
-            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn nghe được ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
+        text: introKey,
         isUser: false,
       ),
     ];
@@ -61,37 +63,34 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   bool _isLoading = false;
 
-  // 1. THÊM 2 BIẾN NÀY ĐỂ XỬ LÝ ẢNH
   final ImagePicker _picker = ImagePicker();
   String? _base64Image;
 
-  // 2. THÊM HÀM CHỌN ẢNH NÀY
   Future<void> _pickImage() async {
+    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
     try {
-      // Trên Windows, ImageSource.gallery sẽ mở File Explorer
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery, 
-        maxWidth: 1000, // Nén kích thước để nhẹ payload
-        imageQuality: 50, // Nén chất lượng 50%
+        maxWidth: 1000, 
+        imageQuality: 50, 
       );
 
       if (image != null) {
-        // Đọc file thành byte và mã hóa sang chuỗi Base64
         final bytes = await image.readAsBytes();
         _base64Image = base64Encode(bytes);
 
         // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
         ref.read(chatMessagesProvider.notifier).addMessage(
-              ChatMessage(text: '📸 [Đã đính kèm ảnh hóa đơn]', isUser: true),
+              ChatMessage(text: AppTranslations.getText(lang, 'image_attached'), isUser: true),
             );
 
         // Tự động gọi hàm gửi API lên n8n
-        _handleSubmitted("Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.");
+        _handleSubmitted(AppTranslations.getText(lang, 'scan_invoice_prompt'));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi chọn ảnh: $e')),
+          SnackBar(content: Text('${AppTranslations.getText(lang, 'image_error')}$e')),
         );
       }
     }
@@ -113,9 +112,11 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
+    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
+    final scanPrompt = AppTranslations.getText(lang, 'scan_invoice_prompt');
     
     // Chỉ in tin nhắn ra màn hình NẾU nó KHÔNG PHẢI là câu lệnh quét ảnh tự động
-    if (text != "Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.") {
+    if (text != scanPrompt) {
       ref.read(chatMessagesProvider.notifier).addMessage(
             ChatMessage(text: text, isUser: true),
           );
@@ -126,48 +127,26 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     });
     _scrollToBottom();
 
-    // Lấy thông tin user hiện tại để gài vô gói gửi lên cho AI
     final user = Supabase.instance.client.auth.currentUser;
-
-    // // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
-    // final transactions = ref.read(transactionsStreamProvider).value ?? [];
-    // // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
-    // final sortedTxs = List<TransactionEntity>.from(transactions)
-    //   ..sort((a, b) => b.date.compareTo(a.date));
-    // final recentTxs = sortedTxs.take(15).toList();
-
-    // final String historyString = recentTxs
-    //     .map((t) {
-    //       final sign = t.isExpense ? 'Chi' : 'Thu';
-    //       // Format thủ công dd/mm/yyyy
-    //       final dateStr =
-    //           "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
-    //       return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
-    //     })
-    //     .join(" | ");
 
     try {
       final client = HttpClient();
-      // Bắn lệnh POST lên Cổng test của Docker n8n
       final request = await client.postUrl(
         Uri.parse('http://localhost:5678/webhook/ai-chat'),
       );
       request.headers.set('Content-Type', 'application/json');
-      // Bọc dán dữ liệu vào thùng JSON
+      
       final payload = {
         'message': text,
         'user_id': user?.id,
-      //  'history': historyString, // Điệp viên Data chìm
-        'current_date': DateTime.now().toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
-        if (_base64Image != null) 'image_base64': _base64Image, // THÊM DÒNG NÀY: Gửi ảnh nếu có
+        'current_date': DateTime.now().toIso8601String(), 
+        if (_base64Image != null) 'image_base64': _base64Image, 
       };
 
-      // Xóa bộ nhớ tạm của ảnh sau khi đã gói hàng xong để không bị gửi kèm vào câu chat chữ tiếp theo
       _base64Image = null;
 
       request.add(utf8.encode(jsonEncode(payload)));
 
-      // Chờ AI n8n trả kết quả về
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
 
@@ -176,28 +155,24 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           _isLoading = false;
         });
 
-        // Bóc tách JSON do n8n (qua tay Gemini) trả về
         try {
           final responseJson = jsonDecode(responseBody);
           final replyText =
               responseJson['replyMessage'] ??
               responseJson['bot_text'] ??
-              'Chưa bóc tách được câu trả lời!';
+              AppTranslations.getText(lang, 'parse_error');
 
           ref.read(chatMessagesProvider.notifier).addMessage(
                 ChatMessage(text: replyText, isUser: false),
               );
 
-          // Fetch dữ liệu ngược lại từ Supabase về Local Database (Isar)
-          // Để màn hình Home và Statistics tự động cập nhật số tiền mới!
           if (responseJson['replyMessage'] != null) {
             ref.read(syncTransactionsUseCaseProvider).execute();
           }
         } catch (e) {
-          // Lỗi Decode JSON
           ref.read(chatMessagesProvider.notifier).addMessage(
                 ChatMessage(
-                  text: 'AI n8n trả về kết quả không tương thích:\n$responseBody',
+                  text: '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody',
                   isUser: false,
                 ),
               );
@@ -211,8 +186,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         });
         ref.read(chatMessagesProvider.notifier).addMessage(
               ChatMessage(
-                text:
-                    '🔴 Lỗi ngắt kết nối với não AI:\nĐảm bảo Webhook n8n đang mở cửa [Listening]. Lỗi chi tiết: $e',
+                text: '${AppTranslations.getText(lang, 'ai_disconnected')}$e',
                 isUser: false,
               ),
             );
@@ -231,6 +205,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
+    final lang = ref.watch(languageProvider); // THEO DÕI NGÔN NGỮ ĐỂ VẼ GIAO DIỆN
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -256,7 +231,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessageBubble(message, lang);
               },
             ),
           ),
@@ -278,7 +253,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Finance AI is thinking...',
+                    AppTranslations.getText(lang, 'finance_ai_thinking'),
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: Theme.of(
@@ -289,13 +264,13 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 ],
               ),
             ),
-          _buildTextComposer(),
+          _buildTextComposer(lang), // TRUYỀN LANG XUỐNG
         ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, String lang) {
     final isUser = message.isUser;
     final alignment = isUser
         ? CrossAxisAlignment.end
@@ -312,6 +287,12 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       bottomLeft: Radius.circular(isUser ? 20 : 0),
       bottomRight: Radius.circular(isUser ? 0 : 20),
     );
+
+    // XỬ LÝ DỊCH CÂU CHÀO MẶC ĐỊNH
+    String displayText = message.text;
+    if (message.text == ChatMessagesNotifier.introKey) {
+      displayText = AppTranslations.getText(lang, 'intro_message');
+    }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -332,7 +313,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                     ),
             ),
             child: Text(
-              message.text,
+              displayText, // HIỂN THỊ TEXT ĐÃ DỊCH HOẶC TEXT TỪ AI
               style: TextStyle(color: textColor, fontSize: 16),
             ),
           ),
@@ -341,7 +322,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     );
   }
 
-  Widget _buildTextComposer() {
+  Widget _buildTextComposer(String lang) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -357,14 +338,12 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       child: SafeArea(
         child: Row(
           children: [
-
-            // THÊM NÚT CAMERA Ở ĐÂY
             IconButton(
               icon: const Icon(Icons.add_a_photo_rounded, color: AppTheme.textSubDark),
               onPressed: _pickImage,
-              tooltip: 'Gửi hóa đơn',
+              tooltip: AppTranslations.getText(lang, 'send_invoice'),
             ),
-            const SizedBox(width: 8), // Khoảng cách nhỏ giữa nút camera và ô nhập văn bản
+            const SizedBox(width: 8), 
 
             Expanded(
               child: TextField(
@@ -372,7 +351,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 textInputAction: TextInputAction.send,
                 onSubmitted: _handleSubmitted,
                 decoration: InputDecoration(
-                  hintText: 'Nhập mẩu tiền bạn vừa tiêu (vd: Đổ xăng 50k)...',
+                  hintText: AppTranslations.getText(lang, 'chat_hint'),
                   hintStyle: TextStyle(
                     color: Theme.of(
                       context,

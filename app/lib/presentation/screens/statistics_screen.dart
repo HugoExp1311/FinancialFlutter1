@@ -7,6 +7,8 @@ import '../providers/app_providers.dart';
 import '../utils/transaction_actions.dart';
 import '../utils/category_utils.dart';
 import 'package:core_domain/core_domain.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -53,6 +55,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider); // lấy ngôn ngữ
+
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,17 +70,20 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Statistics',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      AppTranslations.getText(lang, 'statistics'),
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 4),
                     IconButton(
-                      tooltip: 'Sync Data',
+                      tooltip: AppTranslations.getText(lang, 'sync_data'),
                       icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
                       onPressed: () async {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Syncing with Cloud...'), duration: Duration(seconds: 1)),
+                          SnackBar(
+                            content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')), 
+                            duration: const Duration(seconds: 1)
+                          ),
                         );
                         await ref.read(syncTransactionsUseCaseProvider).execute();
                       },
@@ -87,7 +94,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerRight,
-                    child: _buildTimeFilters(),
+                    child: _buildTimeFilters(lang),
                   ),
                 ),
               ],
@@ -108,34 +115,33 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   // Tab chọn Loại Báo Cáo
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildStatTypeToggle(),
+                    child: _buildStatTypeToggle(lang),
                   ),
                   const SizedBox(height: 24),
 
                   // Biểu đồ đường (Line Chart) & Tổng Thu Nhập Ròng
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildSummaryAndLineChart(),
+                    child: _buildSummaryAndLineChart(lang),
                   ),
                   const SizedBox(height: 32),
 
                   // Biểu đồ hình tròn (Pie Chart) cho phân bổ danh mục
-                  if (_statType !=
-                      0) // Chỉ hiện Pie Chart nếu đang xem Income/Expense
+                  if (_statType != 0) // Chỉ hiện Pie Chart nếu đang xem Income/Expense
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Category Breakdown',
-                            style: TextStyle(
+                          Text(
+                            AppTranslations.getText(lang, 'category_breakdown'),
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _buildPieChartSection(),
+                          _buildPieChartSection(lang),
                           const SizedBox(height: 32),
                         ],
                       ),
@@ -147,9 +153,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Details by Date',
-                          style: TextStyle(
+                        Text(
+                          AppTranslations.getText(lang, 'details_by_date'),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -157,14 +163,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                         IconButton(
                           icon: Icon(
                             Icons.search_rounded,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                           ),
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Search filter active!'),
+                              SnackBar(
+                                content: Text(AppTranslations.getText(lang, 'search_filter_active')),
                               ),
                             );
                           },
@@ -173,10 +177,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _buildDetailsList(ref),
-                  const SizedBox(
-                    height: 80,
-                  ), // Thêm khoảng trống dưới cùng để cuộn không cấn nút
+                  _buildDetailsList(ref, lang),
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -187,7 +189,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     );
   }
 
-  Widget _buildTimeFilters() {
+  Widget _buildTimeFilters(String lang) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -197,7 +199,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         mainAxisSize: MainAxisSize.min,
         children: ['Day', 'Week', 'Month', 'Year'].map((filter) {
           final isSelected = _timeFilter == filter;
-          String label = filter;
+          String label = AppTranslations.getText(lang, filter.toLowerCase());
           if (filter == 'Day' && isSelected) {
             final d = _selectedDate ?? DateTime.now();
             label = '${d.day}/${d.month}';
@@ -210,7 +212,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   context: context,
                   initialDate: _selectedDate ?? DateTime.now(),
                   firstDate: DateTime(2000),
-                  lastDate: DateTime.now().add(const Duration(days: 365)), // Cho chọn cả tương lai gần
+                  lastDate: DateTime.now().add(const Duration(days: 365)), 
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
@@ -229,7 +231,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                     _timeFilter = 'Day';
                   });
                 } else if (!isSelected) {
-                  // Nếu ko chọn mà bấm ra ngoài, giữ nguyên nếu nó đang là tab khác (nếu bấn chọn tab day lần đầu thì auto pick today)
                   setState(() {
                     _selectedDate = DateTime.now();
                     _timeFilter = 'Day';
@@ -240,7 +241,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               }
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Giảm padding ngang xíu để lọt vừa màn hình nhỏ
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
               decoration: BoxDecoration(
                 color: isSelected ? AppTheme.primaryColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
@@ -252,9 +253,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected
                       ? Colors.white
-                      : Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -264,7 +263,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     );
   }
 
-  Widget _buildStatTypeToggle() {
+  Widget _buildStatTypeToggle(String lang) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -272,9 +271,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       ),
       child: Row(
         children: [
-          _buildToggleTab(0, 'Net', AppTheme.primaryColor),
-          _buildToggleTab(1, 'Expense', AppTheme.expenseColor),
-          _buildToggleTab(2, 'Income', AppTheme.incomeColor),
+          _buildToggleTab(0, AppTranslations.getText(lang, 'net'), AppTheme.primaryColor),
+          _buildToggleTab(1, AppTranslations.getText(lang, 'expense'), AppTheme.expenseColor),
+          _buildToggleTab(2, AppTranslations.getText(lang, 'income'), AppTheme.incomeColor),
         ],
       ),
     );
@@ -311,7 +310,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     );
   }
 
-  Widget _buildSummaryAndLineChart() {
+  Widget _buildSummaryAndLineChart(String lang) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
     double income = 0;
     double expense = 0;
@@ -324,7 +323,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     List<double> buckets = List.filled(numBuckets, 0.0);
 
     if (txAsyncValue.hasValue && txAsyncValue.value != null) {
-      // Áp dụng bộ lọc thời gian
       final timeFiltered = _getFilteredTransactions(txAsyncValue.value!);
 
       for (var tx in timeFiltered) {
@@ -334,14 +332,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           income += tx.amount;
         }
 
-        // Đổ data vào buckets cho biểu đồ đường
         int bucketIndex = 0;
         if (_timeFilter == 'Year') {
           bucketIndex = tx.date.month - 1;
         } else if (_timeFilter == 'Month') {
           bucketIndex = tx.date.day - 1;
         } else if (_timeFilter == 'Week') {
-          bucketIndex = tx.date.weekday - 1; // 0 = Mon, 6 = Sun
+          bucketIndex = tx.date.weekday - 1; 
         } else if (_timeFilter == 'Day') {
           bucketIndex = tx.date.hour;
         }
@@ -359,16 +356,16 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     }
     double net = income - expense;
 
-    String title = "Net Income";
+    String title = AppTranslations.getText(lang, 'net_income');
     String amount = "\$${net.toStringAsFixed(2)}";
     Color mainColor = AppTheme.primaryColor;
 
     if (_statType == 1) {
-      title = "Total Expense";
+      title = AppTranslations.getText(lang, 'total_expense');
       amount = "\$${expense.toStringAsFixed(2)}";
       mainColor = AppTheme.expenseColor;
     } else if (_statType == 2) {
-      title = "Total Income";
+      title = AppTranslations.getText(lang, 'total_income');
       amount = "\$${income.toStringAsFixed(2)}";
       mainColor = AppTheme.incomeColor;
     }
@@ -407,7 +404,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          // Biểu đồ đường vẽ bằng CustomPaint
           SizedBox(
             height: 120,
             width: double.infinity,
@@ -416,7 +412,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          // Các mốc thời gian trục X
           _buildChartLabels(),
         ],
       ),
@@ -446,7 +441,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     );
   }
 
-  Widget _buildPieChartSection() {
+  Widget _buildPieChartSection(String lang) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
     Map<String, double> categorySums = {};
     double totalFilterAmount = 0;
@@ -464,7 +459,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       }
     }
 
-    // Sắp xếp các danh mục lớn nhất
     var sortedEntries = categorySums.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -491,7 +485,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         sweeps.add(percentage);
         
         final categoryColor = CategoryUtils.getColor(sortedEntries[i].key);
-        // Lưu lại màu thật để vẽ pie chart arc
         if (sweeps.length - 1 >= pieColors.length) {
           pieColors.add(categoryColor);
         } else {
@@ -518,14 +511,14 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       legendWidgets.add(
         _buildLegendItem(
           Colors.grey,
-          'Other',
+          AppTranslations.getText(lang, 'other'),
           '${(percentage * 100).toStringAsFixed(1)}%',
         ),
       );
     }
 
     if (sweeps.isEmpty) {
-      sweeps.add(1.0); // Hiển thị 1 vòng tròn trống nếu ko có data
+      sweeps.add(1.0); 
     }
 
     return Row(
@@ -548,9 +541,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: legendWidgets.isEmpty
                 ? [
-                    const Text(
-                      'No data for this category.',
-                      style: TextStyle(color: AppTheme.textSubDark),
+                    Text(
+                      AppTranslations.getText(lang, 'no_data_category'),
+                      style: const TextStyle(color: AppTheme.textSubDark),
                     ),
                   ]
                 : legendWidgets,
@@ -583,27 +576,25 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     );
   }
 
-  Widget _buildDetailsList(WidgetRef ref) {
+  Widget _buildDetailsList(WidgetRef ref, String lang) {
     final transactionsAsyncValue = ref.watch(transactionsStreamProvider);
 
     return transactionsAsyncValue.when(
       data: (transactions) {
         if (transactions.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24.0),
               child: Text(
-                'No transactions found.',
-                style: TextStyle(color: AppTheme.textSubDark),
+                AppTranslations.getText(lang, 'no_transactions_found'),
+                style: const TextStyle(color: AppTheme.textSubDark),
               ),
             ),
           );
         }
 
-        // 1. Lọc theo thời gian (Tuần/Tháng/Năm)
         var filteredTxs = _getFilteredTransactions(transactions);
 
-        // 2. Lọc theo loại thống kê (Expense/Income)
         if (_statType == 1) {
           filteredTxs = filteredTxs.where((tx) => tx.isExpense).toList();
         } else if (_statType == 2) {
@@ -611,18 +602,17 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         }
 
         if (filteredTxs.isEmpty) {
-          return const Center(
+          return Center(
             child: Padding(
-              padding: EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24.0),
               child: Text(
-                'No data match.',
-                style: TextStyle(color: AppTheme.textSubDark),
+                AppTranslations.getText(lang, 'no_data_match'),
+                style: const TextStyle(color: AppTheme.textSubDark),
               ),
             ),
           );
         }
 
-        // Ghi trực tiếp ListView
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

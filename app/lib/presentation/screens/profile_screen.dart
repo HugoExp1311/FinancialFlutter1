@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -9,6 +11,8 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(supabaseProvider).auth.currentUser;
+    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ 
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
@@ -31,45 +35,59 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              user?.email ?? 'Unknown User',
+              user?.email ?? AppTranslations.getText(lang, 'unknown_user'),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
             Text(
-              'Premium Member ✦',
-              style: TextStyle(
+              AppTranslations.getText(lang, 'premium_member'),
+              style: const TextStyle(
                 color: AppTheme.primaryColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 40),
+            
             _buildSettingItem(
               context,
               Icons.person_outline_rounded,
-              'Account Settings',
+              AppTranslations.getText(lang, 'account_settings'),
             ),
+
+            // NÚT ĐỔI NGÔN NGỮ
+            _buildSettingItem(
+              context,
+              Icons.language_rounded,
+              AppTranslations.getText(lang, 'language'),
+              onTap: () {
+                // Chuyển đổi qua lại giữa 'vi' và 'en'
+                ref.read(languageProvider.notifier).state = 
+                    lang == 'vi' ? 'en' : 'vi';
+              },
+            ),
+            
             _buildSettingItem(
               context,
               Icons.security_rounded,
-              'Security & FaceID',
+              AppTranslations.getText(lang, 'security_faceid'),
             ),
             _buildSettingItem(
               context,
               Icons.notifications_none_rounded,
-              'Notifications',
+              AppTranslations.getText(lang, 'notifications'),
             ),
             _buildSettingItem(
               context,
               Icons.help_outline_rounded,
-              'Help & Support',
+              AppTranslations.getText(lang, 'help_support'),
             ),
             const SizedBox(
               height: 48,
-            ), // Thay thế thẻ Spacer() để phù hợp với màn hình có thể cuộn
+            ), 
             _buildSettingItem(
               context,
               Icons.logout_rounded,
-              'Log Out',
+              AppTranslations.getText(lang, 'logout'),
               isDanger: true,
               onTap: () async {
                 final supabase = ref.read(supabaseProvider);

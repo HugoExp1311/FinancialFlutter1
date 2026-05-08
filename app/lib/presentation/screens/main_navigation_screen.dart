@@ -9,6 +9,8 @@ import 'profile_screen.dart';
 import 'add_transaction_screen.dart';
 import 'chatbot_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
@@ -52,6 +54,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     return Scaffold(
       // Sử dụng IndexedStack để giữ State của các màn hình khi chuyển đổi tab
       body: Stack(
@@ -118,15 +121,27 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildNavItem(Icons.home_rounded, 0, 'Home'),
-                _buildNavItem(Icons.bar_chart_rounded, 1, 'Stats'),
+                _buildNavItem(
+                  Icons.home_rounded, 
+                  0, 
+                  AppTranslations.getText(lang, 'home'),
+                ),
+                _buildNavItem(
+                  Icons.bar_chart_rounded, 
+                  1, 
+                  AppTranslations.getText(lang, 'statistics'),
+                ),
                 const SizedBox(width: 48), // Chừa không gian cho nút FAB ở giữa
                 _buildNavItem(
                   Icons.account_balance_wallet_rounded,
                   2,
-                  'Wallet',
+                  AppTranslations.getText(lang, 'wallet'),
                 ),
-                _buildNavItem(Icons.person_rounded, 3, 'Profile'),
+                _buildNavItem(
+                  Icons.person_rounded, 
+                  3, 
+                  AppTranslations.getText(lang, 'profile'),
+                ),
               ],
             ),
           ),

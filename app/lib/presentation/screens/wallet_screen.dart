@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ
     final txAsyncValue = ref.watch(transactionsStreamProvider);
     double totalNet = 0;
 
@@ -29,25 +32,27 @@ class WalletScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'My Wallets',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              AppTranslations.getText(lang, 'my_wallets'),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             _buildCreditCard(
               context,
+              lang: lang,
               color1: const Color(0xFF0F2027),
               color2: const Color(0xFF1F4C74),
-              name: 'Main Wallet',
+              name: AppTranslations.getText(lang, 'main_wallet'),
               number: '**** **** **** 1234',
               balance: '\$$mainWalletBalance',
             ),
             const SizedBox(height: 20),
             _buildCreditCard(
               context,
+              lang: lang,
               color1: const Color(0xFF8E2DE2),
               color2: const Color(0xFF4A00E0),
-              name: 'Savings',
+              name: AppTranslations.getText(lang, 'savings'),
               number: '**** **** **** 5678',
               balance: '\$$savingsBalance',
             ),
@@ -64,18 +69,18 @@ class WalletScreen extends ConsumerWidget {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Center(
+                child: Center(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.add_circle_outline_rounded,
                         color: AppTheme.primaryColor,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Text(
-                        'Add New Wallet',
-                        style: TextStyle(
+                        AppTranslations.getText(lang, 'add_new_wallet'),
+                        style: const TextStyle(
                           color: AppTheme.primaryColor,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -94,6 +99,7 @@ class WalletScreen extends ConsumerWidget {
 
   Widget _buildCreditCard(
     BuildContext context, {
+    required String lang,
     required Color color1,
     required Color color2,
     required String name,
@@ -155,9 +161,9 @@ class WalletScreen extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Total Balance',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  Text(
+                    AppTranslations.getText(lang, 'total_balance'),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   Text(
                     balance,

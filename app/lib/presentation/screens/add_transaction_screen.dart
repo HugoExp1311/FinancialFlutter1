@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   const AddTransactionScreen({super.key});
@@ -85,12 +87,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          'New Transaction',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          AppTranslations.getText(lang, 'new_transaction'),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
@@ -114,16 +118,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Income / Expense Toggle
-                    _buildTypeToggle(),
+                    _buildTypeToggle(lang),
                     const SizedBox(height: 32),
 
                     // Amount Input
                     Center(
                       child: Column(
                         children: [
-                          const Text(
-                            'Enter Amount',
-                            style: TextStyle(
+                          Text(
+                            AppTranslations.getText(lang, 'enter_amount'),
+                            style: const TextStyle(
                               color: AppTheme.textSubDark,
                               fontSize: 14,
                             ),
@@ -134,8 +138,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                               controller: _amountController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                decimal: true,
+                              ),
                               style: TextStyle(
                                 fontSize: 48,
                                 fontWeight: FontWeight.bold,
@@ -165,9 +169,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     const SizedBox(height: 48),
 
                     // Category Selection
-                    const Text(
-                      'Category',
-                      style: TextStyle(
+                    Text(
+                      AppTranslations.getText(lang, 'category'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -184,7 +188,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           final isSelected =
                               _selectedCategory == category['name'];
                           return _buildCategoryItem(
-                            category['name'],
+                            lang,
+                            category['name'], // Giữ nguyên name gốc tiếng Anh để xử lý logic
                             category['icon'],
                             category['color'],
                             isSelected,
@@ -195,9 +200,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     const SizedBox(height: 32),
 
                     // Date Selection
-                    const Text(
-                      'Date',
-                      style: TextStyle(
+                    Text(
+                      AppTranslations.getText(lang, 'date'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -251,9 +256,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     const SizedBox(height: 32),
 
                     // Note Input
-                    const Text(
-                      'Note',
-                      style: TextStyle(
+                    Text(
+                      AppTranslations.getText(lang, 'note'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -262,7 +267,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     TextField(
                       controller: _noteController,
                       decoration: InputDecoration(
-                        hintText: 'What was this for?',
+                        hintText: AppTranslations.getText(lang, 'what_was_this_for'),
                         hintStyle: TextStyle(
                           color: Theme.of(
                             context,
@@ -293,7 +298,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                   onPressed: () async {
                     if (_amountController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please enter an amount')),
+                        SnackBar(content: Text(AppTranslations.getText(lang, 'please_enter_amount'))),
                       );
                       return;
                     }
@@ -316,7 +321,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           isExpense: _isExpense,
                           date: _selectedDate,
                           note: _noteController.text,
-                          categoryName: _selectedCategory,
+                          categoryName: _selectedCategory, // LƯU TÊN TIẾNG ANH GỐC ('Food', 'Transport')
                           categoryIconCode: icon.codePoint,
                           categoryColorHex: color.toARGB32(),
                         );
@@ -324,8 +329,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Transaction saved successfully!'),
+                      SnackBar(
+                        content: Text(AppTranslations.getText(lang, 'transaction_saved')),
                       ),
                     );
                   },
@@ -336,9 +341,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     ),
                     elevation: 4,
                   ),
-                  child: const Text(
-                    'Save Transaction',
-                    style: TextStyle(
+                  child: Text(
+                    AppTranslations.getText(lang, 'save_transaction'),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
@@ -353,7 +358,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
-  Widget _buildTypeToggle() {
+  Widget _buildTypeToggle(String lang) {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
@@ -381,7 +386,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    'Expense',
+                    AppTranslations.getText(lang, 'expense'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: _isExpense
@@ -415,7 +420,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    'Income',
+                    AppTranslations.getText(lang, 'income'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: !_isExpense
@@ -435,13 +440,17 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   }
 
   Widget _buildCategoryItem(
+    String lang,
     String name,
     IconData icon,
     Color color,
     bool isSelected,
   ) {
+    // Dịch nhãn hiển thị trên màn hình dựa theo chữ tiếng anh gốc (chuyển sang chữ thường)
+    final displayName = AppTranslations.getText(lang, name.toLowerCase());
+
     return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = name),
+      onTap: () => setState(() => _selectedCategory = name), // VẪN LƯU NAME GỐC KHI ĐƯỢC CHỌN
       child: Container(
         width: 80,
         margin: const EdgeInsets.only(right: 16),
@@ -472,7 +481,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              name,
+              displayName,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -482,6 +491,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         context,
                       ).colorScheme.onSurface.withValues(alpha: 0.5),
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
