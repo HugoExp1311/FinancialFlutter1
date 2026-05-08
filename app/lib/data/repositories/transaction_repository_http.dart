@@ -30,6 +30,7 @@ class TransactionRepositoryHttp implements ITransactionRepository {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       isSynced: true,
       isDeleted: json['is_deleted'] as bool? ?? false,
+      walletType: json['wallet_type'] as String? ?? 'main',
     );
   }
 
@@ -44,6 +45,7 @@ class TransactionRepositoryHttp implements ITransactionRepository {
       'category_icon_code': t.categoryIconCode,
       'category_color_hex': t.categoryColorHex,
       'updated_at': t.updatedAt.toIso8601String(),
+      'wallet_type': t.walletType,
     };
   }
 

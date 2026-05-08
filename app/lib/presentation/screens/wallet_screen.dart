@@ -9,19 +9,25 @@ class WalletScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
-    double totalNet = 0;
+    double mainBalance = 0;
+    double savingsBalance = 0;
 
     if (txAsyncValue.hasValue && txAsyncValue.value != null) {
       for (var tx in txAsyncValue.value!) {
         if (!tx.isDeleted) {
-          totalNet += tx.isExpense ? -tx.amount : tx.amount;
+          final amount = tx.isExpense ? -tx.amount : tx.amount;
+          
+          if (tx.walletType == 'main') {
+            mainBalance += amount;
+          } else if (tx.walletType == 'savings') {
+            savingsBalance += amount;
+          }
         }
       }
     }
 
-    // Tạm thời giả lập phân tách: 70% ở ví chính, 30% ở ví tiết kiệm
-    final mainWalletBalance = (totalNet * 0.7).toStringAsFixed(2);
-    final savingsBalance = (totalNet * 0.3).toStringAsFixed(2);
+    final mainWalletBalance = mainBalance.toStringAsFixed(2);
+    final savingsBalanceStr = savingsBalance.toStringAsFixed(2);
 
     return SafeArea(
       child: Padding(
@@ -49,7 +55,7 @@ class WalletScreen extends ConsumerWidget {
               color2: const Color(0xFF4A00E0),
               name: 'Savings',
               number: '**** **** **** 5678',
-              balance: '\$$savingsBalance',
+              balance: '\$$savingsBalanceStr',
             ),
             const SizedBox(height: 32),
             InkWell(

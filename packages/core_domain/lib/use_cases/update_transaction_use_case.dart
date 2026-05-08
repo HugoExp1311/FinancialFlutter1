@@ -19,6 +19,7 @@ class UpdateTransactionUseCase {
     int? categoryIconCode,
     int? categoryColorHex,
     String? note,
+    String? walletType,
   }) async {
     // --- VALIDATION ---
     final newAmount = amount ?? existing.amount;
@@ -40,6 +41,7 @@ class UpdateTransactionUseCase {
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
       note: note?.trim().isEmpty == true ? null : note?.trim(),
+      walletType: walletType,
       updatedAt: DateTime.now().toUtc(), // Bắt buộc cập nhật timestamp
       isSynced: false,           // Đánh dấu cần sync lại
     );

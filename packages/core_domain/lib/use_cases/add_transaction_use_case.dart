@@ -25,6 +25,7 @@ class AddTransactionUseCase {
     required int categoryIconCode,
     required int categoryColorHex,
     String? note,
+    String walletType = 'main',
   }) async {
     // --- VALIDATION (Business Rules) ---
     if (amount <= 0) {
@@ -47,6 +48,7 @@ class AddTransactionUseCase {
       updatedAt: DateTime.now().toUtc(),
       isSynced: false,
       isDeleted: false,
+      walletType: walletType,
     );
 
     await _repository.addTransaction(entity);

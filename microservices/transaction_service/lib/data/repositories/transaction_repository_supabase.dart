@@ -40,6 +40,7 @@ class TransactionRepositorySupabase implements ITransactionRepository {
       updatedAt: DateTime.parse(json['updated_at'] as String),
       isSynced: true, // It is in the cloud so it's synced
       isDeleted: json['is_deleted'] as bool? ?? false,
+      walletType: json['wallet_type'] as String? ?? 'main',
     );
   }
 
@@ -56,6 +57,7 @@ class TransactionRepositorySupabase implements ITransactionRepository {
       'category_color_hex': t.categoryColorHex,
       'updated_at': t.updatedAt.toIso8601String(),
       'is_deleted': t.isDeleted,
+      'wallet_type': t.walletType,
       // user_id MUST be handled by RLS if using auth header, or passed properly if service role
     };
   }

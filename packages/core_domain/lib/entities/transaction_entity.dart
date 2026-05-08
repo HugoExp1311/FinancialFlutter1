@@ -30,6 +30,10 @@ class TransactionEntity extends Equatable {
   final bool isSynced;
   final bool isDeleted;
 
+  // --- Wallet categorization ---
+  /// Wallet type: 'main' or 'savings'
+  final String walletType;
+
   const TransactionEntity({
     this.localId,
     required this.syncId,
@@ -43,6 +47,7 @@ class TransactionEntity extends Equatable {
     required this.updatedAt,
     this.isSynced = false,
     this.isDeleted = false,
+    this.walletType = 'main',
   });
 
   /// Tạo bản sao với một số field được thay đổi (Immutable pattern).
@@ -59,6 +64,7 @@ class TransactionEntity extends Equatable {
     DateTime? updatedAt,
     bool? isSynced,
     bool? isDeleted,
+    String? walletType,
   }) {
     return TransactionEntity(
       localId: localId ?? this.localId,
@@ -73,6 +79,7 @@ class TransactionEntity extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
       isDeleted: isDeleted ?? this.isDeleted,
+      walletType: walletType ?? this.walletType,
     );
   }
 
@@ -89,6 +96,7 @@ class TransactionEntity extends Equatable {
         updatedAt,
         isSynced,
         isDeleted,
+        walletType,
       ];
 
   @override

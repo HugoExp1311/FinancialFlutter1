@@ -79,37 +79,38 @@ Dưới đây là bản brainstorm và xây dựng dàn ý chi tiết dựa trê
 
 ---
 
-## CHƯƠNG 4: THỰC NGHIỆM VÀ ỨNG DỤNG
-*(Đánh giá mức độ hoàn thiện của sản phẩm)*
-**4.1. Mục tiêu thực nghiệm**
-- Kiểm chứng tính năng cơ bản của App và sự toàn vẹn dữ liệu.
-- Đánh giá khả năng chịu tải hoặc độ trễ qua cổng Gateway.
+## CHƯƠNG 4: TRIỂN KHAI VÀ KẾT QUẢ THỰC NGHIỆM
+*(Trình bày quy trình hiện thực hóa thiết kế và đánh giá chất lượng sản phẩm cuối cùng)*
 
-**4.2. Môi trường chạy thực nghiệm**
-- Cấu hình server / máy tính cục bộ.
-- Phần mềm: Docker, Docker Compose, Postman (để test API hở).
+**4.1. Môi trường triển khai hệ thống**
+- **4.1.1. Cấu hình phần cứng:** Thông số máy tính thực nghiệm (CPU, RAM, OS).
+- **4.1.2. Môi trường phần mềm và Phiên bản:** 
+    - Hạ tầng: Docker 25.x, Docker Compose v2.x.
+    - Phát triển: Flutter SDK 3.x, Dart SDK 3.x.
+    - Android Build Stack: Android Gradle Plugin 8.0.2, Gradle 8.0, Kotlin 1.9.22.
+- **4.1.3. Quản lý biến môi trường (.env):** Giải thích vai trò của các tệp cấu hình (Supabase URL, API Keys, N8N Webhook) trong việc đảm bảo tính bảo mật và linh hoạt khi triển khai.
 
-**4.3. Đánh giá kết quả thực nghiệm**
-- **Kết quả đạt được:** Hoạt động ổn định của App, phân luồng Nginx chuẩn, phân quyền (RLS) an toàn qua token.
-- **Nguyên nhân và Hạn chế:** Các vấn đề như độ trễ của AI khi gọi qua nhiều proxy, tài nguyên ngốn bởi n8n,...
+**4.2. Đóng gói và Vận hành Microservices (Containerization)**
+- **4.2.1. Thiết lập Docker Compose:** Phân tích cách điều phối các container (Transaction Service, Chatbot Service, API Gateway) hoạt động đồng bộ trong mạng nội bộ cô lập (`finance_network`).
+- **4.2.2. Quy trình khởi chạy một-chạm:** Mô tả các bước thực thi từ lệnh `docker-compose up` đến việc khởi chạy Flutter Client trên các nền tảng khác nhau.
+- **4.2.3. Giám sát hệ thống:** Cách quản lý và theo dõi Log thời gian thực từ các dịch vụ Backend để xử lý sự cố.
 
----
+**4.4. Kết quả thực nghiệm và Đánh giá (Testing & Evaluation)**
+- **4.4.1. Kiểm thử tính năng nghiệp vụ (Functional Testing):** 
+    - Kiểm chứng luồng ghi chép thu chi và thống kê dữ liệu.
+    - Kiểm chứng khả năng phản hồi và độ chính xác của AI Chatbot theo ngữ cảnh tài chính.
+- **4.4.2. Kiểm thử bảo mật và Phân quyền:** Xác thực cơ chế Row-Level Security (RLS) kết hợp với JWT Token, đảm bảo dữ liệu người dùng được cách ly tuyệt đối.
+- **4.4.3. Kiểm thử hiệu năng:** Đánh giá độ trễ khi truy cập qua API Gateway và sự ổn định của luồng dữ liệu Stream (Realtime).
 
-## CHƯƠNG 5: TRIỂN KHAI ỨNG DỤNG VÀ HƯỚNG DẪN SỬ DỤNG
-*(Hướng dẫn đóng gói và bàn giao hệ thống)*
-**5.1. Mục tiêu triển khai**
-- Đóng gói toàn bộ hệ thống vào ảnh (images) và khởi chạy một-chạm.
-
-**5.2. Yêu cầu hệ thống và thư viện**
-- Phiên bản Docker, Flutter SDK, Dart SDK cần dùng.
-- Các File `.env` chứa biến quy định môi trường.
-
-**5.3. Cấu trúc thư mục triển khai**
-- Giải thích sơ đồ tổ chức thư mục của dự án (Flutter App, Các Service Dart, Cấu Hình Nginx, file `docker-compose.yaml`).
-
-**5.4. Hướng dẫn cài đặt và chạy ứng dụng**
-- Các bước khởi chạy cụ thể: Bước 1 (Cài đặt Docker), Bước 2 (Chạy `docker-compose up -d`), Bước 3 (Chạy App Client).
-- Cách kiểm tra log lỗi khi Container sập.
+**4.5. Thảo luận và Hướng phát triển**
+- **4.5.1. Ưu điểm:** Kiến trúc Microservices giúp hệ thống linh hoạt, dễ bảo trì và khả năng mở rộng cao.
+- **4.4.2. Hạn chế:** Tiêu tốn tài nguyên phần cứng (do chạy nhiều container và n8n), độ trễ tích lũy khi qua nhiều lớp proxy.
+- **4.4.3. Hướng phát triển:** Nâng cấp khả năng tự động mở rộng (Auto-scaling), tích hợp CI/CD và tối ưu hóa bộ nhớ cho các service nhẹ.
 
 ---
+
+## KẾT LUẬN VÀ KIẾN NGHỊ
+- Tổng kết những mục tiêu đã đạt được so với đề tài ban đầu.
+- Bài học kinh nghiệm trong quá trình chuyển đổi kiến trúc từ Monolith sang Microservices.
+- Kiến nghị về các giải pháp tối ưu hóa hơn cho hệ thống AI Agent trong tương lai.
 

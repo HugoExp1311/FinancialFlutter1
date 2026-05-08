@@ -47,6 +47,7 @@ class TransactionHandler {
           'category_color_hex': t.categoryColorHex,
           'updated_at': t.updatedAt.toIso8601String(),
           'is_deleted': t.isDeleted,
+          'wallet_type': t.walletType,
         }).toList();
         return _jsonResponse(data);
       } catch (e) {
@@ -62,6 +63,9 @@ class TransactionHandler {
         final body = await request.readAsString();
         final data = jsonDecode(body) as Map<String, dynamic>;
 
+        // DEBUG: Log wallet_type
+        print('🔍 BACKEND DEBUG: Received wallet_type = ${data['wallet_type']}');
+
         await addUseCase.execute(
           amount: (data['amount'] as num).toDouble(),
           isExpense: data['is_expense'] as bool,
@@ -70,6 +74,7 @@ class TransactionHandler {
           categoryName: data['category_name'] as String,
           categoryIconCode: data['category_icon_code'] as int,
           categoryColorHex: data['category_color_hex'] as int,
+          walletType: data['wallet_type'] as String? ?? 'main',
         );
 
         return _jsonResponse({'message': 'created successfully'}, status: 201);
@@ -100,6 +105,7 @@ class TransactionHandler {
           categoryName: data['category_name'] as String?,
           categoryIconCode: data['category_icon_code'] as int?,
           categoryColorHex: data['category_color_hex'] as int?,
+          walletType: data['wallet_type'] as String?,
         );
 
         return _jsonResponse({'message': 'updated', 'sync_id': syncId});

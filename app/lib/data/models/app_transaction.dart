@@ -41,6 +41,9 @@ class AppTransaction {
 
   bool isDeleted = false; // Cờ Xóa mềm (Soft Delete)
 
+  // --- [WALLET CATEGORIZATION] ---
+  late String walletType; // 'main' or 'savings'
+
   // ---------------------------------------------------------------------------
   // MAPPER: AppTransaction (Isar / Infrastructure) ↔ TransactionEntity (Domain)
   // ---------------------------------------------------------------------------
@@ -61,6 +64,7 @@ class AppTransaction {
       updatedAt: updatedAt,
       isSynced: isSynced,
       isDeleted: isDeleted,
+      walletType: walletType,
     );
   }
 
@@ -79,6 +83,7 @@ class AppTransaction {
     updatedAt = entity.updatedAt;
     isSynced = entity.isSynced;
     isDeleted = entity.isDeleted;
+    walletType = entity.walletType;
   }
 
   /// Tạo AppTransaction mới từ Entity (dùng khi insert record chưa có localId).

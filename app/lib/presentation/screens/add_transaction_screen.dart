@@ -14,6 +14,7 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   bool _isExpense = true;
   String _selectedCategory = 'Food';
+  String _selectedWallet = 'main'; // Default to main wallet
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
@@ -250,6 +251,74 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     ),
                     const SizedBox(height: 32),
 
+                    // Wallet Selection
+                    const Text(
+                      'Wallet',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardTheme.color,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.05),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedWallet,
+                          isExpanded: true,
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          dropdownColor: Theme.of(context).cardTheme.color,
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'main',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.account_balance_wallet_rounded, size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Main Wallet'),
+                                ],
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 'savings',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.savings_rounded, size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Savings'),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() => _selectedWallet = newValue);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
                     // Note Input
                     const Text(
                       'Note',
@@ -308,6 +377,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     final color = selectedCat['color'] as Color;
                     final icon = selectedCat['icon'] as IconData;
 
+                    // DEBUG: Kiểm tra giá trị wallet
+                    print('🔍 DEBUG: Selected Wallet = $_selectedWallet');
+
                     // Gọi Use Case — không cần biết Isar hay Supabase
                     await ref
                         .read(addTransactionUseCaseProvider)
@@ -319,6 +391,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           categoryName: _selectedCategory,
                           categoryIconCode: icon.codePoint,
                           categoryColorHex: color.toARGB32(),
+                          walletType: _selectedWallet,
                         );
 
                     if (!context.mounted) return;

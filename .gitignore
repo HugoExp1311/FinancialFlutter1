@@ -126,3 +126,7 @@ start_micro.bat
 diagram/
 n8n/
 docs/
+app/libisar.dll
+TestCase.md
+start_appBuild.bat
+ProjectReport_Word.md
