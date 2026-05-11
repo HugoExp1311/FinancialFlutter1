@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class TransactionActions {
   /// Hiển thị Menu Edit / Delete chung cho tất cả các màn hình
   static void showOptions(BuildContext context, WidgetRef ref, TransactionEntity tx) {
+    final lang = ref.read(languageProvider); // LẤY NGÔN NGỮ
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -19,7 +23,7 @@ class TransactionActions {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
-                title: const Text('Edit Transaction'),
+                title: Text(AppTranslations.getText(lang, 'edit_transaction')),
                 onTap: () {
                   Navigator.pop(context); // Đóng menu
                   _showEditDialog(context, ref, tx); // Mở dialog sửa
@@ -27,7 +31,10 @@ class TransactionActions {
               ),
               ListTile(
                 leading: const Icon(Icons.delete_rounded, color: AppTheme.expenseColor),
-                title: const Text('Delete Transaction', style: TextStyle(color: AppTheme.expenseColor)),
+                title: Text(
+                  AppTranslations.getText(lang, 'delete_transaction'),
+                  style: const TextStyle(color: AppTheme.expenseColor)
+                ),
                 onTap: () async {
                   Navigator.pop(context); // Đóng menu
                   // Gọi rễ UseCase để Soft Delete
@@ -35,13 +42,13 @@ class TransactionActions {
                     await ref.read(deleteTransactionUseCaseProvider).execute(tx.syncId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Transaction deleted')),
+                        SnackBar(content: Text(AppTranslations.getText(lang, 'transaction_deleted'))),
                       );
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to delete: $e')),
+                        SnackBar(content: Text('${AppTranslations.getText(lang, 'failed_to_delete')}: $e')),
                       );
                     }
                   }
@@ -56,6 +63,8 @@ class TransactionActions {
 
   /// Hiển thị Hộp thoại Popup nhập số liệu sửa
   static void _showEditDialog(BuildContext context, WidgetRef ref, TransactionEntity tx) {
+    final lang = ref.read(languageProvider); // LẤY NGÔN NGỮ
+
     final amountController = TextEditingController(text: tx.amount.toString());
     final noteController = TextEditingController(text: tx.note ?? '');
 
@@ -87,110 +96,117 @@ class TransactionActions {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: const Text('Edit Transaction', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'Amount',
-                  prefixIcon: const Icon(Icons.attach_money_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text(
+                AppTranslations.getText(lang, 'edit_transaction'), 
+                style: const TextStyle(fontWeight: FontWeight.bold)
               ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                decoration: InputDecoration(
-                  labelText: 'Category',
-                  prefixIcon: const Icon(Icons.category_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                dropdownColor: Theme.of(context).cardTheme.color,
-                items: currentCategories.map((c) {
-                  return DropdownMenuItem<String>(
-                    value: c['name'],
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(c['icon'] as IconData, color: c['color'] as Color, size: 20),
-                        const SizedBox(width: 12),
-                        Text(c['name'] as String),
-                      ],
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: AppTranslations.getText(lang, 'amount'),
+                      prefixIcon: const Icon(Icons.attach_money_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      selectedCategory = val;
-                    });
-                  }
-                },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedCategory, // Giá trị lưu vào logic vẫn là Tiếng Anh ('Food', 'Transport')
+                    decoration: InputDecoration(
+                      labelText: AppTranslations.getText(lang, 'category'),
+                      prefixIcon: const Icon(Icons.category_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    dropdownColor: Theme.of(context).cardTheme.color,
+                    items: currentCategories.map((c) {
+                      return DropdownMenuItem<String>(
+                        value: c['name'],
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(c['icon'] as IconData, color: c['color'] as Color, size: 20),
+                            const SizedBox(width: 12),
+                            // hiển thị tên đã dịch tiếng Việt (Ăn uống, Di chuyển)
+                            Text(AppTranslations.getText(lang, (c['name'] as String).toLowerCase())),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          selectedCategory = val;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: noteController,
+                    decoration: InputDecoration(
+                      labelText: AppTranslations.getText(lang, 'note'),
+                      prefixIcon: const Icon(Icons.notes_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: noteController,
-                decoration: InputDecoration(
-                  labelText: 'Note',
-                  prefixIcon: const Icon(Icons.notes_rounded),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    AppTranslations.getText(lang, 'cancel'), 
+                    style: const TextStyle(color: AppTheme.textSubDark)
+                  ),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: AppTheme.textSubDark)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () async {
-                final newAmount = double.tryParse(amountController.text);
-                if (newAmount == null) return;
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    final newAmount = double.tryParse(amountController.text);
+                    if (newAmount == null) return;
 
-                final selectedCatConfig = currentCategories.firstWhere((c) => c['name'] == selectedCategory);
-                final color = selectedCatConfig['color'] as Color;
-                final icon = selectedCatConfig['icon'] as IconData;
+                    final selectedCatConfig = currentCategories.firstWhere((c) => c['name'] == selectedCategory);
+                    final color = selectedCatConfig['color'] as Color;
+                    final icon = selectedCatConfig['icon'] as IconData;
 
-                final updatedTx = tx.copyWith(
-                  amount: newAmount,
-                  note: noteController.text,
-                  categoryName: selectedCategory,
-                  categoryIconCode: icon.codePoint,
-                  // Tương thích API flutter cũ vs mới:
-                  categoryColorHex: color.toARGB32(),
-                  isSynced: false,
-                  updatedAt: DateTime.now(),
-                );
-
-                try {
-                  await ref.read(updateTransactionUseCaseProvider).execute(updatedTx);
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Transaction updated')),
+                    final updatedTx = tx.copyWith(
+                      amount: newAmount,
+                      note: noteController.text,
+                      categoryName: selectedCategory, // Vẫn lưu 'Food', 'Transport'
+                      categoryIconCode: icon.codePoint,
+                      // Tương thích API flutter cũ vs mới:
+                      categoryColorHex: color.toARGB32(),
+                      isSynced: false,
+                      updatedAt: DateTime.now(),
                     );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update: $e')),
-                    );
-                  }
-                }
-              },
-              child: const Text('Save', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
+
+                    try {
+                      await ref.read(updateTransactionUseCaseProvider).execute(updatedTx);
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(AppTranslations.getText(lang, 'transaction_updated'))),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('${AppTranslations.getText(lang, 'failed_to_update')}: $e')),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(AppTranslations.getText(lang, 'save'), style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
           },
         );
       },

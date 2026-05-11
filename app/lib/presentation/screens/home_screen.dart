@@ -6,12 +6,15 @@ import '../widgets/transaction_item.dart';
 import '../providers/app_providers.dart';
 import '../utils/transaction_actions.dart';
 import '../utils/category_utils.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageProvider);
     // Không bọc Scaffold ở đây nữa vì đã có Scaffold tổng ở màn MainNavigationScreen
     return SafeArea(
       child: Padding(
@@ -30,7 +33,7 @@ class HomeScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recent Transactions',
+                  AppTranslations.getText(lang, 'recent_transactions'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -39,9 +42,9 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () {},
-                  child: const Text(
-                    'See All',
-                    style: TextStyle(color: AppTheme.primaryColor),
+                  child: Text(
+                    AppTranslations.getText(lang, 'see_all'), // ĐÃ DỊCH CHỮ SEE ALL
+                    style: const TextStyle(color: AppTheme.primaryColor),
                   ),
                 ),
               ],
@@ -64,14 +67,15 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildTransactionList(WidgetRef ref) {
     final transactionsAsyncValue = ref.watch(transactionsStreamProvider);
+    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ
 
     return transactionsAsyncValue.when(
       data: (transactions) {
         if (transactions.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No transactions yet. Add some!',
-              style: TextStyle(color: AppTheme.textSubDark),
+              AppTranslations.getText(lang, 'no_transactions_yet'),
+              style: const TextStyle(color: AppTheme.textSubDark),
             ),
           );
         }
@@ -80,49 +84,47 @@ class HomeScreen extends ConsumerWidget {
           itemCount: transactions.length,
           itemBuilder: (context, index) {
             final tx = transactions[index];
+            
+            // Dịch tên Category hiển thị
+            final displayCategoryName = AppTranslations.getText(lang, tx.categoryName.toLowerCase());
+
             return GestureDetector(
               onLongPress: () => TransactionActions.showOptions(context, ref, tx),
               onTap: () => TransactionActions.showOptions(context, ref, tx),
               child: TransactionItem(
-                title: tx.categoryName,
-                // Tạm thời format String đơn giản
+                title: displayCategoryName,
                 date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
                 amount: tx.isExpense ? -tx.amount : tx.amount,
-                icon: CategoryUtils.getIcon(tx.categoryName),
-                iconColor: CategoryUtils.getColor(tx.categoryName),
+                icon: CategoryUtils.getIcon(tx.categoryName), // Vẫn dùng tên gốc tiếng Anh để lấy icon
+                iconColor: CategoryUtils.getColor(tx.categoryName), // Vẫn dùng tên gốc tiếng Anh để lấy màu
               ),
             );
           },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(child: Text('Error: $error')),
+      error: (error, stack) => Center(
+        child: Text('${AppTranslations.getText(lang, 'error')}: $error'),
+      ),
     );
   }
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final userProfileAsync = ref.watch(userProfileStreamProvider);
-    final profile = userProfileAsync.value;
-    final avatarUrl = profile?.avatarUrl;
-    
-    final displayName = profile?.firstName != null 
-        ? '${profile?.firstName} ${profile?.lastName ?? ''}'.trim()
-        : 'User';
-
+    final lang = ref.watch(languageProvider);
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Good Morning,',
-              style: TextStyle(fontSize: 14, color: AppTheme.textSubDark),
+            Text(
+              AppTranslations.getText(lang, 'welcome'),
+              style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
             ),
             const SizedBox(height: 4),
-            Text(
-              '$displayName!',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            const Text(
+              'Alex Johnson!', // tên mẫu
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -130,23 +132,23 @@ class HomeScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              tooltip: 'Sync Data',
+              tooltip: AppTranslations.getText(lang, 'sync_data'),
               icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
               onPressed: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Syncing with Cloud...'), duration: Duration(seconds: 1)),
+                  SnackBar(
+                    content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')),
+                    duration: const Duration(seconds: 1),
+                  ),
                 );
                 await ref.read(syncTransactionsUseCaseProvider).execute();
-                await ref.read(userProfileRepositoryProvider).syncProfile();
               },
             ),
             const SizedBox(width: 4),
-            CircleAvatar(
+            const CircleAvatar(
               radius: 20,
+              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
               backgroundColor: Colors.transparent,
-              backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                  ? NetworkImage(avatarUrl)
-                  : const NetworkImage('https://i.pravatar.cc/150?img=11'),
             ),
           ],
         ),

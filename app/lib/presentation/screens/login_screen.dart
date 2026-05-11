@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -63,6 +65,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
@@ -90,7 +93,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isSignUp ? 'Create a secure account' : 'Welcome back, login to sync your data',
+                  _isSignUp 
+                      ? AppTranslations.getText(lang, 'create_account') 
+                      : AppTranslations.getText(lang, 'welcome_back'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -104,7 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    labelText: 'Email',
+                    labelText: AppTranslations.getText(lang, 'email'),
                     prefixIcon: const Icon(Icons.email_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   ),
@@ -116,7 +121,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: AppTranslations.getText(lang, 'password'),
                     prefixIcon: const Icon(Icons.lock_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                   ),
@@ -142,7 +147,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
-                          _isSignUp ? 'Sign Up' : 'Log In',
+                          _isSignUp 
+                              ? AppTranslations.getText(lang, 'signup') 
+                              : AppTranslations.getText(lang, 'login'),
                           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
@@ -157,8 +164,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                   child: Text(
                     _isSignUp
-                        ? 'Already have an account? Log In'
-                        : "Don't have an account? Sign Up",
+                        ? AppTranslations.getText(lang, 'have_account')
+                        : AppTranslations.getText(lang, 'no_account'),
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),

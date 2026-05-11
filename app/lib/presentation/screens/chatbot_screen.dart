@@ -6,27 +6,25 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:image_picker/image_picker.dart';
+import '../providers/language_provider.dart'; 
+import '../utils/app_translations.dart'; 
 
 class ChatMessage {
   final String text;
   final bool isUser;
-  final List<String> quickReplies = [
-    "🎯 Tư vấn tài chính",
-    "📊 Thống kê tháng này",
-    "💸 Mẹo tiết kiệm",
-  ];
 
   ChatMessage({required this.text, required this.isUser});
 }
 
 class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
+  static const String introKey = 'intro_message_key';
+
   @override
   List<ChatMessage> build() {
     return [
       ChatMessage(
-        text:
-            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\n Hôm nay bạn đã ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
+        text: introKey, // Lưu dưới dạng Key để dịch ở UI
         isUser: false,
       ),
     ];
@@ -39,8 +37,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   void clear() {
     state = [
       ChatMessage(
-        text:
-            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn nghe được ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
+        text: introKey,
         isUser: false,
       ),
     ];
@@ -66,6 +63,39 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   bool _isLoading = false;
 
+  final ImagePicker _picker = ImagePicker();
+  String? _base64Image;
+
+  Future<void> _pickImage() async {
+    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery, 
+        maxWidth: 1000, 
+        imageQuality: 50, 
+      );
+
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        _base64Image = base64Encode(bytes);
+
+        // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
+        ref.read(chatMessagesProvider.notifier).addMessage(
+              ChatMessage(text: AppTranslations.getText(lang, 'image_attached'), isUser: true),
+            );
+
+        // Tự động gọi hàm gửi API lên n8n
+        _handleSubmitted(AppTranslations.getText(lang, 'scan_invoice_prompt'));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${AppTranslations.getText(lang, 'image_error')}$e')),
+        );
+      }
+    }
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -82,52 +112,41 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
-    ref.read(chatMessagesProvider.notifier).addMessage(
-          ChatMessage(text: text, isUser: true),
-        );
+    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
+    final scanPrompt = AppTranslations.getText(lang, 'scan_invoice_prompt');
+    
+    // Chỉ in tin nhắn ra màn hình NẾU nó KHÔNG PHẢI là câu lệnh quét ảnh tự động
+    if (text != scanPrompt) {
+      ref.read(chatMessagesProvider.notifier).addMessage(
+            ChatMessage(text: text, isUser: true),
+          );
+    }
+
     setState(() {
       _isLoading = true;
     });
     _scrollToBottom();
 
-    // Lấy thông tin user hiện tại để gài vô gói gửi lên cho AI
     final user = Supabase.instance.client.auth.currentUser;
-
-    // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
-    final transactions = ref.read(transactionsStreamProvider).value ?? [];
-    // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
-    final sortedTxs = List<TransactionEntity>.from(transactions)
-      ..sort((a, b) => b.date.compareTo(a.date));
-    final recentTxs = sortedTxs.take(100).toList();
-
-    final String historyString = recentTxs
-        .map((t) {
-          final sign = t.isExpense ? 'Chi' : 'Thu';
-          // Format thủ công dd/mm/yyyy
-          final dateStr =
-              "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
-          return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
-        })
-        .join(" | ");
 
     try {
       final client = HttpClient();
-      // Bắn lệnh POST lên Cổng test của Docker n8n
       final request = await client.postUrl(
         Uri.parse('http://localhost:5678/webhook/ai-chat'),
       );
       request.headers.set('Content-Type', 'application/json');
-      // Bọc dán dữ liệu vào thùng JSON
+      
       final payload = {
         'message': text,
         'user_id': user?.id,
-        'history': historyString, // Điệp viên Data chìm
-        'current_date': DateTime.now()
-            .toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
+        'current_date': DateTime.now().toIso8601String(), 
+        if (_base64Image != null) 'image_base64': _base64Image, 
       };
+
+      _base64Image = null;
+
       request.add(utf8.encode(jsonEncode(payload)));
 
-      // Chờ AI n8n trả kết quả về
       final response = await request.close();
       final responseBody = await response.transform(utf8.decoder).join();
 
@@ -136,22 +155,27 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           _isLoading = false;
         });
 
-        // Bóc tách JSON do n8n (qua tay Gemini) trả về
-        String resultText = responseBody.trim();
-
         try {
-          final decoded = jsonDecode(responseBody);
-          if (decoded is Map) {
-            resultText = decoded['replyMessage'] ?? decoded['output'] ?? responseBody;
+          final responseJson = jsonDecode(responseBody);
+          final replyText =
+              responseJson['replyMessage'] ??
+              responseJson['bot_text'] ??
+              AppTranslations.getText(lang, 'parse_error');
+
+          ref.read(chatMessagesProvider.notifier).addMessage(
+                ChatMessage(text: replyText, isUser: false),
+              );
+
+          if (responseJson['replyMessage'] != null) {
+            ref.read(syncTransactionsUseCaseProvider).execute();
           }
         } catch (e) {
-          // Không phải JSON thì cứ để yên là responseBody
-        }
-
-        if (resultText.isNotEmpty) {
           ref.read(chatMessagesProvider.notifier).addMessage(
-                ChatMessage(text: resultText, isUser: false),
-          );
+                ChatMessage(
+                  text: '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody',
+                  isUser: false,
+                ),
+              );
         }
         _scrollToBottom();
       }
@@ -162,8 +186,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         });
         ref.read(chatMessagesProvider.notifier).addMessage(
               ChatMessage(
-                text:
-                    '🔴 Lỗi ngắt kết nối với não AI:\nĐảm bảo Webhook n8n đang mở cửa [Listening]. Lỗi chi tiết: $e',
+                text: '${AppTranslations.getText(lang, 'ai_disconnected')}$e',
                 isUser: false,
               ),
             );
@@ -182,6 +205,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
+    final lang = ref.watch(languageProvider); // THEO DÕI NGÔN NGỮ ĐỂ VẼ GIAO DIỆN
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -207,7 +231,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessageBubble(message, lang);
               },
             ),
           ),
@@ -229,7 +253,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Finance AI is thinking...',
+                    AppTranslations.getText(lang, 'finance_ai_thinking'),
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: Theme.of(
@@ -240,13 +264,13 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 ],
               ),
             ),
-          _buildTextComposer(),
+          _buildTextComposer(lang), // TRUYỀN LANG XUỐNG
         ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, String lang) {
     final isUser = message.isUser;
     final alignment = isUser
         ? CrossAxisAlignment.end
@@ -264,6 +288,12 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       bottomRight: Radius.circular(isUser ? 0 : 20),
     );
 
+    // XỬ LÝ DỊCH CÂU CHÀO MẶC ĐỊNH
+    String displayText = message.text;
+    if (message.text == ChatMessagesNotifier.introKey) {
+      displayText = AppTranslations.getText(lang, 'intro_message');
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -271,40 +301,28 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.8, // Giới hạn chiều rộng
-            ),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: borderRadius,
-              // ... (giữ nguyên border) ...
+              border: isUser
+                  ? null
+                  : Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.1),
+                    ),
             ),
-            // THAY THẾ Text() bằng MarkdownBody() bên dưới:
-            child: isUser 
-              ? Text(message.text, style: TextStyle(color: textColor, fontSize: 16))
-              : MarkdownBody(
-                  data: message.text,
-                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                    p: TextStyle(color: textColor, fontSize: 16, height: 1.5),
-                    strong: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-                    listBullet: TextStyle(color: textColor, fontSize: 16),
-                    blockSpacing: 10,
-                  ),
-                ),
+            child: Text(
+              displayText, // HIỂN THỊ TEXT ĐÃ DỊCH HOẶC TEXT TỪ AI
+              style: TextStyle(color: textColor, fontSize: 16),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTextComposer() {
-    // Danh sách các gợi ý nhanh
-    final List<String> quickReplies = [
-      "🎯 Tư vấn tài chính",
-      "📊 Thống kê tháng này",
-      "💸 Mẹo tiết kiệm",
-    ];
-    
+  Widget _buildTextComposer(String lang) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -318,65 +336,50 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         ],
       ),
       child: SafeArea(
-        child: Column( // Chuyển sang Column để chứa hàng nút bấm phía trên
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
-            // Hàng nút bấm Quick Replies
-            SizedBox(
-              height: 45,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(), // Hiệu ứng cuộn lò xo
-                children: quickReplies.map((text) => Padding(
-                  padding: const EdgeInsets.only(right: 10.0),
-                  child: ActionChip(
-                    label: Text(text, style: const TextStyle(fontSize: 12)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    backgroundColor: AppTheme.incomeColor.withOpacity(0.1),
-                    side: BorderSide(color: AppTheme.incomeColor.withOpacity(0.3)),
-                    onPressed: () => _handleSubmitted(text),
+            IconButton(
+              icon: const Icon(Icons.add_a_photo_rounded, color: AppTheme.textSubDark),
+              onPressed: _pickImage,
+              tooltip: AppTranslations.getText(lang, 'send_invoice'),
+            ),
+            const SizedBox(width: 8), 
+
+            Expanded(
+              child: TextField(
+                controller: _textController,
+                textInputAction: TextInputAction.send,
+                onSubmitted: _handleSubmitted,
+                decoration: InputDecoration(
+                  hintText: AppTranslations.getText(lang, 'chat_hint'),
+                  hintStyle: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
-                )).toList(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _textController,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: _handleSubmitted,
-                    decoration: InputDecoration(
-                      hintText: 'Nhập mẩu tiền bạn vừa tiêu (vd: Đổ xăng 50k)...',
-                      hintStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: Theme.of(context).colorScheme.surface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                ),
             const SizedBox(width: 12),
-                Container(
-                  decoration: const BoxDecoration(
-                    color: AppTheme.incomeColor,
-                    shape: BoxShape.circle,
-                  ),
+            Container(
+              decoration: const BoxDecoration(
+                color: AppTheme.incomeColor,
+                shape: BoxShape.circle,
+              ),
               child: IconButton(
-                    icon: const Icon(Icons.send_rounded, color: Colors.white),
-                    onPressed: () => _handleSubmitted(_textController.text),
-                  ),
-                ),
-              ],
+                icon: const Icon(Icons.send_rounded, color: Colors.white),
+                onPressed: () => _handleSubmitted(_textController.text),
+              ),
             ),
           ],
         ),

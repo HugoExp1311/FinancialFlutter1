@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
@@ -9,6 +11,7 @@ class BalanceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
+    final lang = ref.watch(languageProvider);
 
     double income = 0;
     double expense = 0;
@@ -51,9 +54,9 @@ class BalanceCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(
+          Text(
+            AppTranslations.getText(lang, 'total_balance'),
+            style: const TextStyle(
               color: Colors.white70,
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -78,14 +81,14 @@ class BalanceCard extends ConsumerWidget {
                 context,
                 icon: Icons.arrow_downward,
                 color: AppTheme.incomeColor,
-                title: 'Income',
+                title: AppTranslations.getText(lang, 'income'),
                 amount: '\$${income.toStringAsFixed(2)}',
               ),
               _buildIncomeExpenseBlock(
                 context,
                 icon: Icons.arrow_upward,
                 color: AppTheme.expenseColor,
-                title: 'Expenses',
+                title: AppTranslations.getText(lang, 'expense'),
                 amount: '\$${expense.toStringAsFixed(2)}',
               ),
             ],
