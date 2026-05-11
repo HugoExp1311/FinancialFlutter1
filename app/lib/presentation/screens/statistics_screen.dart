@@ -18,12 +18,13 @@ class StatisticsScreen extends ConsumerStatefulWidget {
 }
 
 class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
-  String _timeFilter = 'Day'; // Các tab bộ lọc thời gian: Day, Week, Month, Year
-  DateTime? _selectedDate; // Ngày được chọn khi ấn vào tab Day
-  int _statType = 0; // 0: Net Income, 1: Expense, 2: Income
+  String _timeFilter = 'Day'; 
+  DateTime? _selectedDate; 
+  int _statType = 0; // 0: Net, 1: Expense, 2: Income
 
-  /// Lọc mảng lịch sử giao dịch theo khoảng thời gian đã chọn
-  List<TransactionEntity> _getFilteredTransactions(List<TransactionEntity> allTxs) {
+  List<TransactionEntity> _getFilteredTransactions(
+    List<TransactionEntity> allTxs,
+  ) {
     final now = DateTime.now();
     DateTime startDate;
 
@@ -32,36 +33,34 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       return allTxs.where((tx) {
         if (tx.isDeleted) return false;
         return tx.date.year == target.year &&
-               tx.date.month == target.month &&
-               tx.date.day == target.day;
+            tx.date.month == target.month &&
+            tx.date.day == target.day;
       }).toList();
     } else if (_timeFilter == 'Week') {
-      // Trong vòng 7 ngày qua
       startDate = now.subtract(const Duration(days: 7));
       startDate = DateTime(startDate.year, startDate.month, startDate.day);
     } else if (_timeFilter == 'Month') {
-      // Trong tháng này
       startDate = DateTime(now.year, now.month, 1);
     } else {
-      // Trong năm nay
       startDate = DateTime(now.year, 1, 1);
     }
 
     return allTxs.where((tx) {
       if (tx.isDeleted) return false;
-      return tx.date.isAfter(startDate.subtract(const Duration(microseconds: 1)));
+      return tx.date.isAfter(
+        startDate.subtract(const Duration(microseconds: 1)),
+      );
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final lang = ref.watch(languageProvider); // lấy ngôn ngữ
+    final lang = ref.watch(languageProvider); 
 
     return SafeArea(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header & Bộ lọc thời gian
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
             child: Row(
@@ -72,20 +71,33 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   children: [
                     Text(
                       AppTranslations.getText(lang, 'statistics'),
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(width: 4),
                     IconButton(
                       tooltip: AppTranslations.getText(lang, 'sync_data'),
-                      icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
+                      icon: const Icon(
+                        Icons.sync_rounded,
+                        color: AppTheme.textSubDark,
+                      ),
                       onPressed: () async {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')), 
-                            duration: const Duration(seconds: 1)
+                            content: Text(
+                              AppTranslations.getText(
+                                lang,
+                                'syncing_with_cloud',
+                              ),
+                            ),
+                            duration: const Duration(seconds: 1),
                           ),
                         );
-                        await ref.read(syncTransactionsUseCaseProvider).execute();
+                        await ref
+                            .read(syncTransactionsUseCaseProvider)
+                            .execute();
                       },
                     ),
                   ],
@@ -109,82 +121,88 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               },
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tab chọn Loại Báo Cáo
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildStatTypeToggle(lang),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Biểu đồ đường (Line Chart) & Tổng Thu Nhập Ròng
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: _buildSummaryAndLineChart(lang),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Biểu đồ hình tròn (Pie Chart) cho phân bổ danh mục
-                  if (_statType != 0) // Chỉ hiện Pie Chart nếu đang xem Income/Expense
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: _buildStatTypeToggle(lang),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: _buildSummaryAndLineChart(lang),
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (_statType != 0) 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppTranslations.getText(
+                                lang,
+                                'category_breakdown',
+                              ),
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildPieChartSection(lang),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            AppTranslations.getText(lang, 'category_breakdown'),
+                            AppTranslations.getText(lang, 'details_by_date'),
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 24),
-                          _buildPieChartSection(lang),
-                          const SizedBox(height: 32),
+                          IconButton(
+                            icon: Icon(
+                              Icons.search_rounded,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    AppTranslations.getText(
+                                      lang,
+                                      'search_filter_active',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
-
-                  // Danh sách Giao dịch chi tiết theo Ngày
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppTranslations.getText(lang, 'details_by_date'),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.search_rounded,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                          ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(AppTranslations.getText(lang, 'search_filter_active')),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildDetailsList(ref, lang),
-                  const SizedBox(height: 80),
-                ],
+                    const SizedBox(height: 8),
+                    _buildDetailsList(ref, lang),
+                    const SizedBox(height: 80),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -212,7 +230,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   context: context,
                   initialDate: _selectedDate ?? DateTime.now(),
                   firstDate: DateTime(2000),
-                  lastDate: DateTime.now().add(const Duration(days: 365)), 
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(
@@ -241,7 +259,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
               }
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), 
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected ? AppTheme.primaryColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
@@ -253,7 +271,9 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected
                       ? Colors.white
-                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -271,9 +291,21 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
       ),
       child: Row(
         children: [
-          _buildToggleTab(0, AppTranslations.getText(lang, 'net'), AppTheme.primaryColor),
-          _buildToggleTab(1, AppTranslations.getText(lang, 'expense'), AppTheme.expenseColor),
-          _buildToggleTab(2, AppTranslations.getText(lang, 'income'), AppTheme.incomeColor),
+          _buildToggleTab(
+            0,
+            AppTranslations.getText(lang, 'net'),
+            AppTheme.primaryColor,
+          ),
+          _buildToggleTab(
+            1,
+            AppTranslations.getText(lang, 'expense'),
+            AppTheme.expenseColor,
+          ),
+          _buildToggleTab(
+            2,
+            AppTranslations.getText(lang, 'income'),
+            AppTheme.incomeColor,
+          ),
         ],
       ),
     );
@@ -338,7 +370,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         } else if (_timeFilter == 'Month') {
           bucketIndex = tx.date.day - 1;
         } else if (_timeFilter == 'Week') {
-          bucketIndex = tx.date.weekday - 1; 
+          bucketIndex = tx.date.weekday - 1;
         } else if (_timeFilter == 'Day') {
           bucketIndex = tx.date.hour;
         }
@@ -483,7 +515,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             ? (sortedEntries[i].value / totalFilterAmount)
             : 0;
         sweeps.add(percentage);
-        
+
         final categoryColor = CategoryUtils.getColor(sortedEntries[i].key);
         if (sweeps.length - 1 >= pieColors.length) {
           pieColors.add(categoryColor);
@@ -518,7 +550,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     }
 
     if (sweeps.isEmpty) {
-      sweeps.add(1.0); 
+      sweeps.add(1.0);
     }
 
     return Row(
@@ -622,7 +654,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: GestureDetector(
-                onLongPress: () => TransactionActions.showOptions(context, ref, tx),
+                onLongPress: () =>
+                    TransactionActions.showOptions(context, ref, tx),
                 onTap: () => TransactionActions.showOptions(context, ref, tx),
                 child: TransactionItem(
                   title: tx.note != null && tx.note!.isNotEmpty
@@ -644,7 +677,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   }
 }
 
-// ============== CUSTOM PAINTERS THỂ HIỆN TRÌNH ĐỘ CODE EXPERT ================
+// --- CUSTOM PAINTERS ---
 
 class _LineChartPainter extends CustomPainter {
   final Color lineColor;
@@ -664,8 +697,7 @@ class _LineChartPainter extends CustomPainter {
     final path = Path();
     double maxVal = points.isNotEmpty ? points.reduce(math.max) : 0;
     double minVal = points.isNotEmpty ? points.reduce(math.min) : 0;
-    
-    // Tạo 1 vòm cao an toàn để nét vẽ k bị chập đỉnh
+
     if (minVal == maxVal) {
       minVal -= 10;
       maxVal += 10;
@@ -676,7 +708,6 @@ class _LineChartPainter extends CustomPainter {
     double stepX = size.width / (points.length <= 1 ? 1 : points.length - 1);
 
     for (int i = 0; i < points.length; i++) {
-      // Chuẩn hóa giá trị từ 0.0 đến 1.0 (nhỏ nhất vẽ ở dưới cùng, lớn nhất ở trên)
       double normalized = (points[i] - minVal) / range;
       double y = size.height * 0.9 - (normalized * size.height * 0.8);
       double x = i * stepX;
@@ -688,18 +719,13 @@ class _LineChartPainter extends CustomPainter {
         double prevNormalized = (points[i - 1] - minVal) / range;
         double prevY = size.height * 0.9 - (prevNormalized * size.height * 0.8);
 
-        // Vẽ đường cong Bezier siêu mượt
-        path.cubicTo(
-          prevX + stepX / 2.5, prevY,
-          x - stepX / 2.5, y,
-          x, y
-        );
+        // Vẽ đường cong Bezier
+        path.cubicTo(prevX + stepX / 2.5, prevY, x - stepX / 2.5, y, x, y);
       }
     }
 
     canvas.drawPath(path, paint);
 
-    // Vẽ vùng Gradient bên dưới đường Line
     final fillPath = Path.from(path);
     fillPath.lineTo(size.width, size.height);
     fillPath.lineTo(0, size.height);
@@ -743,7 +769,7 @@ class _PieChartPainter extends CustomPainter {
     for (int i = 0; i < sweeps.length; i++) {
       paint.color = colors[i % colors.length];
       final sweepAngle = sweeps[i] * 2 * math.pi;
-      // Dùng stroke Cap round nên vẽ lùi lại 1 chút để có khoảng hở giữa các phần (trừ khi có mỗi 1 đoạn 100%)
+      
       final gap = sweeps.length > 1 ? 0.1 : 0.0;
       canvas.drawArc(rect, startAngle, sweepAngle - gap, false, paint);
       startAngle += sweepAngle;

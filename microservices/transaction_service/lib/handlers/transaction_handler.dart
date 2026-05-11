@@ -1,30 +1,18 @@
 import 'dart:convert';
 import 'package:shelf/shelf.dart';
 
-/// [TransactionHandler] — Xử lý HTTP requests cho Transaction Resource.
-///
-/// Hiện tại là STUB (trả về mock data). Khi đi sâu vào Bước 3:
-///   1. Inject `ITransactionRepository` (sẽ dùng Supabase trực tiếp hoặc PostgreSQL)
-///   2. Inject Use Cases từ `core_domain`
-///   3. Map JSON ↔ TransactionEntity
-///
-/// Ví dụ flow đầy đủ sau này:
-///   POST /transactions
-///     → parse JSON body → TransactionEntity
-///     → AddTransactionUseCase.execute(entity)
-///     → return 201 Created
+/// [TransactionHandler] — Handler xử lý các yêu cầu HTTP cho Giao dịch.
 class TransactionHandler {
-  // --- HEALTH CHECK ---
+  // --- KIỂM TRA TRẠNG THÁI ---
 
   Future<Response> health(Request request) async {
     return _jsonResponse({'status': 'ok', 'service': 'transaction-service'});
   }
 
-  // --- GET /transactions ---
+  // --- LẤY DANH SÁCH ---
 
   Future<Response> getTransactions(Request request) async {
-    // TODO: Inject SyncTransactionsUseCase + ITransactionRepository
-    // TODO: Lấy user_id từ JWT token trong Authorization header
+    // TODO: Kết nối repository và xử lý User ID từ token
     return _jsonResponse([
       {
         'sync_id': 'stub-uuid-001',
@@ -41,40 +29,39 @@ class TransactionHandler {
     ]);
   }
 
-  // --- POST /transactions ---
+  // --- TẠO MỚI ---
 
   Future<Response> createTransaction(Request request) async {
-    // TODO: Parse body → TransactionEntity → AddTransactionUseCase.execute()
     final body = await request.readAsString();
     final data = jsonDecode(body) as Map<String, dynamic>;
 
-    // Validation ngắn gọn (Use Case sẽ validate đầy đủ khi implement)
+    // Kiểm tra dữ liệu cơ bản
     if (data['amount'] == null || (data['amount'] as num) <= 0) {
       return _jsonResponse({'error': 'amount must be positive'}, status: 400);
     }
 
-    // Stub response — trả lại chính data đã nhận
+    // Tạm thời trả về dữ liệu đã nhận để kiểm tra kết nối
     return _jsonResponse({'message': 'created', 'data': data}, status: 201);
   }
 
-  // --- PUT /transactions/<syncId> ---
+  // --- CẬP NHẬT ---
 
   Future<Response> updateTransaction(Request request, String syncId) async {
-    // TODO: Inject UpdateTransactionUseCase
+    // TODO: Gọi UpdateTransactionUseCase
     final body = await request.readAsString();
     final data = jsonDecode(body) as Map<String, dynamic>;
     return _jsonResponse({'message': 'updated', 'sync_id': syncId, 'data': data});
   }
 
-  // --- DELETE /transactions/<syncId> ---
+  // --- XÓA ---
 
   Future<Response> deleteTransaction(Request request, String syncId) async {
-    // TODO: Inject DeleteTransactionUseCase
+    // TODO: Thực hiện xóa mềm (Soft delete)
     return _jsonResponse({'message': 'soft-deleted', 'sync_id': syncId});
   }
 
   // ---------------------------------------------------------------------------
-  // HELPER
+  // HELPER (Xử lý JSON Response)
   // ---------------------------------------------------------------------------
 
   Response _jsonResponse(dynamic body, {int status = 200}) {

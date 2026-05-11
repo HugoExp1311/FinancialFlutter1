@@ -4,13 +4,6 @@ import 'package:core_domain/repositories/i_transaction_repository.dart';
 
 /// [AddTransactionUseCase] — Xử lý logic tạo mới giao dịch.
 ///
-/// Trách nhiệm:
-///   1. Validate dữ liệu đầu vào (rules thuần túy, không phụ thuộc DB).
-///   2. Sinh syncId (UUID) và timestamp — đảm bảo nhất quán giữa 2 phiên bản.
-///   3. Gọi repository để lưu trữ.
-///
-/// Cả Monolith và Microservices đều DÙNG CHUNG use case này.
-/// Chỉ khác ở `ITransactionRepository` được inject vào.
 class AddTransactionUseCase {
   final ITransactionRepository _repository;
   final _uuid = const Uuid();

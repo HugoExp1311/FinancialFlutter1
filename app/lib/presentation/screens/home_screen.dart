@@ -15,20 +15,16 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageProvider);
-    // Không bọc Scaffold ở đây nữa vì đã có Scaffold tổng ở màn MainNavigationScreen
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thanh chứa chữ Hello + Avatar
             _buildAppBar(context, ref),
             const SizedBox(height: 24),
-            // Thẻ Hiển thị Số dư
             const BalanceCard(),
             const SizedBox(height: 32),
-            // Tiêu đề Lịch sử
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -43,7 +39,10 @@ class HomeScreen extends ConsumerWidget {
                 TextButton(
                   onPressed: () {},
                   child: Text(
-                    AppTranslations.getText(lang, 'see_all'), // ĐÃ DỊCH CHỮ SEE ALL
+                    AppTranslations.getText(
+                      lang,
+                      'see_all',
+                    ),
                     style: const TextStyle(color: AppTheme.primaryColor),
                   ),
                 ),
@@ -67,7 +66,7 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildTransactionList(WidgetRef ref) {
     final transactionsAsyncValue = ref.watch(transactionsStreamProvider);
-    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ
+    final lang = ref.watch(languageProvider);
 
     return transactionsAsyncValue.when(
       data: (transactions) {
@@ -84,19 +83,26 @@ class HomeScreen extends ConsumerWidget {
           itemCount: transactions.length,
           itemBuilder: (context, index) {
             final tx = transactions[index];
-            
-            // Dịch tên Category hiển thị
-            final displayCategoryName = AppTranslations.getText(lang, tx.categoryName.toLowerCase());
+
+            final displayCategoryName = AppTranslations.getText(
+              lang,
+              tx.categoryName.toLowerCase(),
+            );
 
             return GestureDetector(
-              onLongPress: () => TransactionActions.showOptions(context, ref, tx),
+              onLongPress: () =>
+                  TransactionActions.showOptions(context, ref, tx),
               onTap: () => TransactionActions.showOptions(context, ref, tx),
               child: TransactionItem(
                 title: displayCategoryName,
                 date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
                 amount: tx.isExpense ? -tx.amount : tx.amount,
-                icon: CategoryUtils.getIcon(tx.categoryName), // Vẫn dùng tên gốc tiếng Anh để lấy icon
-                iconColor: CategoryUtils.getColor(tx.categoryName), // Vẫn dùng tên gốc tiếng Anh để lấy màu
+                icon: CategoryUtils.getIcon(
+                  tx.categoryName,
+                ),
+                iconColor: CategoryUtils.getColor(
+                  tx.categoryName,
+                ),
               ),
             );
           },
@@ -123,7 +129,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             const Text(
-              'Alex Johnson!', // tên mẫu
+              'vvinh!',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ],
@@ -137,7 +143,9 @@ class HomeScreen extends ConsumerWidget {
               onPressed: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')),
+                    content: Text(
+                      AppTranslations.getText(lang, 'syncing_with_cloud'),
+                    ),
                     duration: const Duration(seconds: 1),
                   ),
                 );
@@ -147,7 +155,7 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(width: 4),
             const CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+              backgroundImage: NetworkImage('https://thf.bing.com/th/id/OIP.NifcFumqU3GDz-nL_NKS-AHaE-?o=7&cb=thfc1rm=3&rs=1&pid=ImgDetMain&o=7&rm=3'),
               backgroundColor: Colors.transparent,
             ),
           ],

@@ -49,7 +49,7 @@ class AppTranslations {
       'save_transaction': 'Save Transaction',
       'please_enter_amount': 'Please enter an amount',
       'transaction_saved': 'Transaction saved successfully!',
-      // dịch UI cho Category (Giữ nguyên gốc tiếng Anh lúc lưu DB)
+      // dịch UI cho Category
       'food': 'Food',
       'transport': 'Transport',
       'shopping': 'Shopping',
@@ -59,16 +59,19 @@ class AppTranslations {
       'rent': 'Rent',
       // end add transaction
       // chatbot
-      'intro_message': 'Hello! I am Finance AI 🤖.\nJust message me your expenses or income, and I will log them for you!',
+      'intro_message':
+          'Hello! I am Finance AI 🤖.\nJust message me your expenses or income, and I will log them for you!',
       'image_attached': '📸 [Invoice image attached]',
-      'scan_invoice_prompt': 'Please scan this invoice image, calculate the total in USD and log it for me.',
+      'scan_invoice_prompt':
+          'Please scan this invoice image, calculate the total in USD and log it for me.',
       'image_error': 'Image selection error: ',
       'finance_ai_thinking': 'Finance AI is thinking...',
       'send_invoice': 'Send invoice',
       'chat_hint': 'Enter your expense (e.g., Gas 50k)...',
       'parse_error': 'Could not extract answer!',
       'ai_incompatible': 'AI returned incompatible result:\n',
-      'ai_disconnected': '🔴 AI disconnection error:\nEnsure n8n Webhook is listening. Details: ',
+      'ai_disconnected':
+          '🔴 AI disconnection error:\nEnsure n8n Webhook is listening. Details: ',
       // end chatbot
       // home
       'welcome': 'Welcome,',
@@ -103,7 +106,6 @@ class AppTranslations {
       'failed_to_update': 'Failed to update',
       // end chi tiết
     },
-
 
     // Từ điển tiếng việt
     'vi': {
@@ -163,16 +165,19 @@ class AppTranslations {
       'rent': 'Tiền cho thuê',
       // end add transaction
       // chatbot
-      'intro_message': 'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn vừa có chi tiêu hay thu nhập gì thì cứ nhắn mình ghi chép hộ nhé!',
+      'intro_message':
+          'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn vừa có chi tiêu hay thu nhập gì thì cứ nhắn mình ghi chép hộ nhé!',
       'image_attached': '📸 [Đã đính kèm ảnh hóa đơn]',
-      'scan_invoice_prompt': 'Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.',
+      'scan_invoice_prompt':
+          'Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.',
       'image_error': 'Lỗi chọn ảnh: ',
       'finance_ai_thinking': 'Finance AI đang suy nghĩ...',
       'send_invoice': 'Gửi hóa đơn',
       'chat_hint': 'Nhập số tiền bạn vừa tiêu (vd: Đổ xăng 50k)...',
       'parse_error': 'Chưa bóc tách được câu trả lời!',
       'ai_incompatible': 'AI n8n trả về kết quả không tương thích:\n',
-      'ai_disconnected': '🔴 Lỗi ngắt kết nối với não AI:\nĐảm bảo Webhook n8n đang mở cửa [Listening]. Lỗi chi tiết: ',
+      'ai_disconnected':
+          '🔴 Lỗi ngắt kết nối với não AI:\nĐảm bảo Webhook n8n đang mở cửa [Listening]. Lỗi chi tiết: ',
       // end chatbot
       // home
       'welcome': 'Chào mừng trở lại,',
@@ -206,7 +211,7 @@ class AppTranslations {
       'transaction_updated': 'Cập nhật thành công',
       'failed_to_update': 'Cập nhật thất bại',
       // end chi tiết
-    }
+    },
   };
 
   static String getText(String lang, String key) {

@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AddTransactionUseCase', () {
-    // TODO: Sẽ inject MockRepository ở Bước 3 khi viết unit tests đầy đủ.
-    // Hiện tại file này chỉ xác nhận package compile thành công.
     test('TransactionEntity equality check', () {
       final now = DateTime(2026, 3, 24);
       final e1 = TransactionEntity(

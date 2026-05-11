@@ -36,9 +36,9 @@ class BalanceCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0F2027), // Đen huyền
-            Color(0xFF143048), // Xanh xám biển
-            Color(0xFF1F4C74), // Xanh đại dương (gradient mượt)
+            Color(0xFF0F2027),
+            Color(0xFF143048),
+            Color(0xFF1F4C74),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -73,7 +73,6 @@ class BalanceCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 32),
-          // Split Income and Expense
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -112,7 +111,7 @@ class BalanceCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: color.withValues(
               alpha: 0.2,
-            ), // Nhấn màu nền hơi mờ để nổi bật icon
+            ),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 20),

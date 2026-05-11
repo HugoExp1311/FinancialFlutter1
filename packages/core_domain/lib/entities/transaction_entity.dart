@@ -1,18 +1,12 @@
 import 'package:equatable/equatable.dart';
 
-/// [TransactionEntity] — Pure domain entity.
-///
-/// KHÔNG phụ thuộc vào bất kỳ framework nào (Isar, Supabase, Flutter).
-/// Đây là "Ngôn ngữ chung" giữa Monolith và Microservices.
-///
-/// - Monolith:      `TransactionRepositoryImpl` map entity này ↔ Isar collection
-/// - Microservices: `TransactionRepositoryHttp` map entity này ↔ JSON từ REST API
+/// Thực thể Giao dịch chính trong hệ thống.
+/// Chứa toàn bộ thông tin cơ bản về chi tiêu và thu nhập.
 class TransactionEntity extends Equatable {
-  /// ID cục bộ (dùng trong Isar). Null nếu chưa có (entity mới chưa lưu).
+  /// ID cục bộ dùng cho Isar DB
   final int? localId;
 
-  /// UUID — Khóa đồng bộ chính giữa Local và Cloud.
-  /// Sinh bởi Use Case, không phải UI.
+  /// Mã UUID dùng để đồng bộ giữa máy và cloud
   final String syncId;
 
   final double amount;
@@ -20,12 +14,12 @@ class TransactionEntity extends Equatable {
   final DateTime date;
   final String? note;
 
-  // --- Category (Flat architecture: nhúng trực tiếp tránh JOIN) ---
+  // --- Thông tin danh mục ---
   final String categoryName;
   final int categoryIconCode;
   final int categoryColorHex;
 
-  // --- Sync flags (Offline-first) ---
+  // --- Thông tin đồng bộ ---
   final DateTime updatedAt;
   final bool isSynced;
   final bool isDeleted;
@@ -45,7 +39,7 @@ class TransactionEntity extends Equatable {
     this.isDeleted = false,
   });
 
-  /// Tạo bản sao với một số field được thay đổi (Immutable pattern).
+  /// Tạo bản sao mới khi cần thay đổi dữ liệu
   TransactionEntity copyWith({
     int? localId,
     String? syncId,
@@ -93,5 +87,5 @@ class TransactionEntity extends Equatable {
 
   @override
   String toString() =>
-      'TransactionEntity(syncId: $syncId, amount: $amount, isExpense: $isExpense, date: $date)';
+      'TransactionEntity(syncId: $syncId, amount: $amount, isExpense: $isExpense)';
 }

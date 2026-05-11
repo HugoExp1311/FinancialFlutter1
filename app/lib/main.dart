@@ -15,7 +15,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Resize window on Desktop for mobile-like preview
+  // Resize cửa sổ trên window
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
@@ -32,16 +32,15 @@ Future<void> main() async {
     });
   }
 
-  // Load environment variables from .env file
   await dotenv.load(fileName: ".env");
 
-  // Khởi tạo Supabase Client
+  // khởi tạo Supabase Client
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // Khởi tạo Isar
+  // khởi tạo Isar
   final dir = await getApplicationDocumentsDirectory();
   final isar = await Isar.open([AppTransactionSchema], directory: dir.path);
 
@@ -63,7 +62,7 @@ class FinanceApp extends StatelessWidget {
       title: 'Finance Manager',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Tự động theo hệ thống
+      themeMode: ThemeMode.system,
       home: const AuthGate(),
     );
   }

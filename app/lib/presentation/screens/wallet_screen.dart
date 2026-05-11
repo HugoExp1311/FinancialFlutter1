@@ -10,7 +10,7 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ
+    final lang = ref.watch(languageProvider);
     final txAsyncValue = ref.watch(transactionsStreamProvider);
     double totalNet = 0;
 
@@ -22,9 +22,8 @@ class WalletScreen extends ConsumerWidget {
       }
     }
 
-    // Tạm thời giả lập phân tách: 70% ở ví chính, 30% ở ví tiết kiệm
-    final mainWalletBalance = (totalNet * 0.7).toStringAsFixed(2);
-    final savingsBalance = (totalNet * 0.3).toStringAsFixed(2);
+    final mainWalletBalance = (totalNet * 1).toStringAsFixed(2);
+    final savingsBalance = (totalNet * 0).toStringAsFixed(2);
 
     return SafeArea(
       child: Padding(
@@ -142,7 +141,7 @@ class WalletScreen extends ConsumerWidget {
                 Icons.wifi_rounded,
                 color: Colors.white,
                 size: 28,
-              ), // Mô phỏng chip NFC
+              ),
             ],
           ),
           const SizedBox(height: 32),

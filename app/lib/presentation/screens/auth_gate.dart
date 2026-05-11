@@ -39,17 +39,13 @@ class _AuthGateState extends ConsumerState<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Nếu chưa đăng nhập, hiển thị Login Screen
     if (_user == null) {
       return const LoginScreen();
     }
 
-    // Nếu đã đăng nhập, vào thẳng App chính
     return const MainNavigationScreen();
   }
 }

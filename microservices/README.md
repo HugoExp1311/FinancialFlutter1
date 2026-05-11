@@ -1,6 +1,5 @@
 # Microservices — Transaction Service
 
-> **Phục vụ:** Môn học 2 (Kiến trúc Microservices)
 > **Stack:** Dart + shelf + core_domain (dùng chung với Monolith)
 
 ---
@@ -50,7 +49,7 @@ Vào `app/lib/presentation/providers/app_providers.dart`, đổi 1 dòng:
 // MONOLITH (mặc định):
 return TransactionRepositoryImpl(isar, supabase);
 
-// MICROSERVICES (khi test môn học 2 — đảm bảo backend đang chạy):
+// MICROSERVICES:
 return TransactionRepositoryHttp(baseUrl: 'http://localhost:8080');
 ```
 

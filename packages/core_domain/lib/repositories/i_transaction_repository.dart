@@ -1,47 +1,38 @@
 import 'package:core_domain/entities/transaction_entity.dart';
 
-/// [ITransactionRepository] — Abstract Contract (Hợp đồng trừu tượng).
-///
-/// Đây là ranh giới giữa Domain Logic và Infrastructure.
-/// Có 2 Implementation "cắm vào" (Dependency Inversion):
-///   1. `TransactionRepositoryImpl`  → dùng Isar + Supabase (Monolith)
-///   2. `TransactionRepositoryHttp`  → gọi REST API (Microservices client)
-///
-/// ⚠️ Tuyệt đối KHÔNG import Isar, Supabase, http vào file này.
+/// Interface định nghĩa các hành vi tương tác với dữ liệu Giao dịch.
+/// Cho phép linh hoạt chuyển đổi giữa Local DB (Isar) và Remote API (HTTP).
 abstract interface class ITransactionRepository {
   // -------------------------------------------------------------------------
   // READ
   // -------------------------------------------------------------------------
 
-  /// Theo dõi danh sách giao dịch real-time (push-based / reactive).
-  /// UI lắng nghe stream này để tự động cập nhật khi có thay đổi.
+  /// lắng nghe thay đổi danh sách giao dịch (Stream).
   Stream<List<TransactionEntity>> watchTransactions();
 
-  /// Lấy tất cả giao dịch một lần (pull-based).
+  /// lấy danh sách toàn bộ giao dịch.
   Future<List<TransactionEntity>> getTransactions();
 
-  /// Lấy một giao dịch theo syncId. Trả về null nếu không tìm thấy.
+  /// tìm kiếm giao dịch qua mã định danh syncId.
   Future<TransactionEntity?> getTransactionBySyncId(String syncId);
 
   // -------------------------------------------------------------------------
   // WRITE
   // -------------------------------------------------------------------------
 
-  /// Tạo mới một giao dịch.
+  ///  thêm giao dịch mới.
   Future<void> addTransaction(TransactionEntity transaction);
 
-  /// Cập nhật giao dịch đã có (xác định bởi syncId / localId).
+  /// cập nhật tt giao dịch
   Future<void> updateTransaction(TransactionEntity transaction);
 
-  /// Xóa mềm (soft delete) — đánh cờ isDeleted = true thay vì xóa khỏi DB.
+  /// xóa giao dịch
   Future<void> deleteTransaction(String syncId);
 
   // -------------------------------------------------------------------------
-  // SYNC (Dành cho Offline-First / Cross-device sync)
+  // SYNC
   // -------------------------------------------------------------------------
 
-  /// Đồng bộ toàn diện:
-  ///   1. Push các record chưa sync lên Cloud.
-  ///   2. Pull các record mới/thay đổi từ Cloud về Local.
+  /// đồng bộ dữ liệu giữa Local và Cloud.
   Future<void> syncAll();
 }

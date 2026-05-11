@@ -3,12 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import 'package:image_picker/image_picker.dart';
-import '../providers/language_provider.dart'; 
-import '../utils/app_translations.dart'; 
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class ChatMessage {
   final String text;
@@ -24,7 +23,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   List<ChatMessage> build() {
     return [
       ChatMessage(
-        text: introKey, // Lưu dưới dạng Key để dịch ở UI
+        text: introKey, // lưu dưới dạng key để dịch tn
         isUser: false,
       ),
     ];
@@ -35,20 +34,14 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   }
 
   void clear() {
-    state = [
-      ChatMessage(
-        text: introKey,
-        isUser: false,
-      ),
-    ];
+    state = [ChatMessage(text: introKey, isUser: false)];
   }
 }
 
-// Global Provider không có .autoDispose để lưu vào RAM trên toàn phiên chạy App
 final chatMessagesProvider =
     NotifierProvider<ChatMessagesNotifier, List<ChatMessage>>(() {
-  return ChatMessagesNotifier();
-});
+      return ChatMessagesNotifier();
+    });
 
 class ChatbotScreen extends ConsumerStatefulWidget {
   const ChatbotScreen({super.key});
@@ -67,30 +60,36 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   String? _base64Image;
 
   Future<void> _pickImage() async {
-    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
+    final lang = ref.read(languageProvider);
     try {
       final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery, 
-        maxWidth: 1000, 
-        imageQuality: 50, 
+        source: ImageSource.gallery,
+        maxWidth: 1000,
+        imageQuality: 50,
       );
 
       if (image != null) {
         final bytes = await image.readAsBytes();
         _base64Image = base64Encode(bytes);
 
-        // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
-        ref.read(chatMessagesProvider.notifier).addMessage(
-              ChatMessage(text: AppTranslations.getText(lang, 'image_attached'), isUser: true),
+        // hiển thị tn người dùng gửi ảnh
+        ref
+            .read(chatMessagesProvider.notifier)
+            .addMessage(
+              ChatMessage(
+                text: AppTranslations.getText(lang, 'image_attached'),
+                isUser: true,
+              ),
             );
 
-        // Tự động gọi hàm gửi API lên n8n
         _handleSubmitted(AppTranslations.getText(lang, 'scan_invoice_prompt'));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${AppTranslations.getText(lang, 'image_error')}$e')),
+          SnackBar(
+            content: Text('${AppTranslations.getText(lang, 'image_error')}$e'),
+          ),
         );
       }
     }
@@ -112,14 +111,14 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
-    final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
+    final lang = ref.read(languageProvider);
     final scanPrompt = AppTranslations.getText(lang, 'scan_invoice_prompt');
-    
-    // Chỉ in tin nhắn ra màn hình NẾU nó KHÔNG PHẢI là câu lệnh quét ảnh tự động
+
+    // chỉ in tin nhắn nếu k phải quét ảnh
     if (text != scanPrompt) {
-      ref.read(chatMessagesProvider.notifier).addMessage(
-            ChatMessage(text: text, isUser: true),
-          );
+      ref
+          .read(chatMessagesProvider.notifier)
+          .addMessage(ChatMessage(text: text, isUser: true));
     }
 
     setState(() {
@@ -135,12 +134,12 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         Uri.parse('http://localhost:5678/webhook/ai-chat'),
       );
       request.headers.set('Content-Type', 'application/json');
-      
+
       final payload = {
         'message': text,
         'user_id': user?.id,
-        'current_date': DateTime.now().toIso8601String(), 
-        if (_base64Image != null) 'image_base64': _base64Image, 
+        'current_date': DateTime.now().toIso8601String(),
+        if (_base64Image != null) 'image_base64': _base64Image,
       };
 
       _base64Image = null;
@@ -162,17 +161,20 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               responseJson['bot_text'] ??
               AppTranslations.getText(lang, 'parse_error');
 
-          ref.read(chatMessagesProvider.notifier).addMessage(
-                ChatMessage(text: replyText, isUser: false),
-              );
+          ref
+              .read(chatMessagesProvider.notifier)
+              .addMessage(ChatMessage(text: replyText, isUser: false));
 
           if (responseJson['replyMessage'] != null) {
             ref.read(syncTransactionsUseCaseProvider).execute();
           }
         } catch (e) {
-          ref.read(chatMessagesProvider.notifier).addMessage(
+          ref
+              .read(chatMessagesProvider.notifier)
+              .addMessage(
                 ChatMessage(
-                  text: '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody',
+                  text:
+                      '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody',
                   isUser: false,
                 ),
               );
@@ -184,7 +186,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         setState(() {
           _isLoading = false;
         });
-        ref.read(chatMessagesProvider.notifier).addMessage(
+        ref
+            .read(chatMessagesProvider.notifier)
+            .addMessage(
               ChatMessage(
                 text: '${AppTranslations.getText(lang, 'ai_disconnected')}$e',
                 isUser: false,
@@ -205,7 +209,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
-    final lang = ref.watch(languageProvider); // THEO DÕI NGÔN NGỮ ĐỂ VẼ GIAO DIỆN
+    final lang = ref.watch(
+      languageProvider,
+    );
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -264,7 +270,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                 ],
               ),
             ),
-          _buildTextComposer(lang), // TRUYỀN LANG XUỐNG
+          _buildTextComposer(lang),
         ],
       ),
     );
@@ -288,7 +294,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       bottomRight: Radius.circular(isUser ? 0 : 20),
     );
 
-    // XỬ LÝ DỊCH CÂU CHÀO MẶC ĐỊNH
     String displayText = message.text;
     if (message.text == ChatMessagesNotifier.introKey) {
       displayText = AppTranslations.getText(lang, 'intro_message');
@@ -313,7 +318,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                     ),
             ),
             child: Text(
-              displayText, // HIỂN THỊ TEXT ĐÃ DỊCH HOẶC TEXT TỪ AI
+              displayText,
               style: TextStyle(color: textColor, fontSize: 16),
             ),
           ),
@@ -339,11 +344,14 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.add_a_photo_rounded, color: AppTheme.textSubDark),
+              icon: const Icon(
+                Icons.add_a_photo_rounded,
+                color: AppTheme.textSubDark,
+              ),
               onPressed: _pickImage,
               tooltip: AppTranslations.getText(lang, 'send_invoice'),
             ),
-            const SizedBox(width: 8), 
+            const SizedBox(width: 8),
 
             Expanded(
               child: TextField(

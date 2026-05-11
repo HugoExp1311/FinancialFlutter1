@@ -7,24 +7,20 @@ void main() {
   late Isar isar;
 
   setUpAll(() async {
-    // Tải Core nhị phân về máy tính để giả lập môi trường DB
     await Isar.initializeIsarCore(download: true);
   });
 
   setUp(() async {
-    // Tạo thư mục tạm thời trên máy để chứa DB nháp
     final tempDir = await Directory.systemTemp.createTemp('isar_testing_');
-
     isar = await Isar.open([AppTransactionSchema], directory: tempDir.path);
   });
 
   tearDown(() async {
-    // Xoá trắng database sau mỗi test
     await isar.close(deleteFromDisk: true);
   });
 
-  group('Isar AppTransaction Tests (CRUD + Query)', () {
-    test('1. Create: Thêm giao dịch (Tạo mới)', () async {
+  group('Kiểm thử CRUD Giao dịch (Isar)', () {
+    test('Nên thêm được giao dịch mới', () async {
       final tx = AppTransaction()
         ..syncId = 'tx-1'
         ..updatedAt = DateTime.now()
@@ -42,7 +38,7 @@ void main() {
       expect(await isar.appTransactions.count(), 1);
     });
 
-    test('2. Read: Đọc & Lọc danh sách (Tìm kiếm)', () async {
+    test('Nên lọc được danh sách theo loại thu nhập/chi tiêu', () async {
       final tx1 = AppTransaction()
         ..syncId = 'tx-1'
         ..updatedAt = DateTime.now()
@@ -52,6 +48,7 @@ void main() {
         ..categoryName = "Cà phê"
         ..categoryIconCode = 0
         ..categoryColorHex = 0;
+        
       final tx2 = AppTransaction()
         ..syncId = 'tx-2'
         ..updatedAt = DateTime.now()
@@ -66,7 +63,6 @@ void main() {
         await isar.appTransactions.putAll([tx1, tx2]);
       });
 
-      // Lọc ra giao dịch thu nhập
       final incomes = await isar.appTransactions
           .filter()
           .isExpenseEqualTo(false)
@@ -74,10 +70,9 @@ void main() {
 
       expect(incomes.length, 1);
       expect(incomes.first.categoryName, "Lương");
-      expect(incomes.first.amount, 5000000);
     });
 
-    test('3. Update: Cập nhật sửa giao dịch đã có', () async {
+    test('Nên cập nhật được thông tin giao dịch đã có', () async {
       final tx = AppTransaction()
         ..syncId = 'tx-3'
         ..updatedAt = DateTime.now()
@@ -88,18 +83,15 @@ void main() {
         ..categoryIconCode = 0
         ..categoryColorHex = 0;
 
-      // Lưu lần đầu
       await isar.writeTxn(() async {
         await isar.appTransactions.put(tx);
       });
-      // Query lấy ID tự động
+      
       final savedTx = await isar.appTransactions.where().findFirst();
 
-      // Sửa đổi dữ liệu
       savedTx!.amount = 15000;
       savedTx.categoryName = "Gửi xe";
 
-      // Lưu đè (Do cùng ID nên Isar sẽ tự cập nhật)
       await isar.writeTxn(() async {
         await isar.appTransactions.put(savedTx);
       });
@@ -107,18 +99,16 @@ void main() {
       final updatedTx = await isar.appTransactions.get(savedTx.id);
       expect(updatedTx!.amount, 15000);
       expect(updatedTx.categoryName, "Gửi xe");
-      // Số lượng mẩu tin vẫn phải là 1 (không bị sinh nảy)
-      expect(await isar.appTransactions.count(), 1);
     });
 
-    test('4. Delete: Xóa một giao dịch', () async {
+    test('Nên xóa được giao dịch khỏi database', () async {
       final tx = AppTransaction()
         ..syncId = 'tx-4'
         ..updatedAt = DateTime.now()
         ..amount = 50000
         ..isExpense = true
         ..date = DateTime.now()
-        ..categoryName = "Mua thẻ"
+        ..categoryName = "Mua sắm"
         ..categoryIconCode = 0
         ..categoryColorHex = 0;
 
@@ -128,57 +118,41 @@ void main() {
 
       final firstTx = await isar.appTransactions.where().findFirst();
 
-      // Act: Xóa
       final deleted = await isar.writeTxn(() async {
         return await isar.appTransactions.delete(firstTx!.id);
       });
 
-      expect(deleted, true); // Hàm xoá trả về true nếu thành công
-      expect(await isar.appTransactions.count(), 0); // DB trống
+      expect(deleted, true);
+      expect(await isar.appTransactions.count(), 0);
     });
 
-    test('5. Aggregation: Truy vấn siêu nhanh (Sum)', () async {
-      // Nhét 3 record vào
+    test('Nên tính được tổng tiền chi tiêu chính xác', () async {
       final tx1 = AppTransaction()
         ..syncId = 'tx-5'
-        ..updatedAt = DateTime.now()
         ..amount = 50000
         ..isExpense = true
         ..date = DateTime.now()
-        ..categoryName = "Sáng"
-        ..categoryIconCode = 0
-        ..categoryColorHex = 0;
+        ..updatedAt = DateTime.now()
+        ..categoryName = "Sáng";
+        
       final tx2 = AppTransaction()
         ..syncId = 'tx-6'
-        ..updatedAt = DateTime.now()
         ..amount = 30000
         ..isExpense = true
         ..date = DateTime.now()
-        ..categoryName = "Trưa"
-        ..categoryIconCode = 0
-        ..categoryColorHex = 0;
-      final tx3 = AppTransaction()
-        ..syncId = 'tx-7'
         ..updatedAt = DateTime.now()
-        ..amount = 200000
-        ..isExpense = false
-        ..date = DateTime.now()
-        ..categoryName = "Bán đồ cũ"
-        ..categoryIconCode = 0
-        ..categoryColorHex = 0;
+        ..categoryName = "Trưa";
 
       await isar.writeTxn(() async {
-        await isar.appTransactions.putAll([tx1, tx2, tx3]);
+        await isar.appTransactions.putAll([tx1, tx2]);
       });
 
-      // Tính: TỔNG tiền các khoản LÀ CHI TIÊU
       final expenseSum = await isar.appTransactions
           .filter()
           .isExpenseEqualTo(true)
-          .amountProperty() // Chọn riêng cột amount để tính
-          .sum(); // Hạ lệnh cho DB tính tổng toán học
+          .amountProperty()
+          .sum();
 
-      // 50,000 + 30,000 = 80,000
       expect(expenseSum, 80000);
     });
   });

@@ -11,7 +11,7 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(supabaseProvider).auth.currentUser;
-    final lang = ref.watch(languageProvider); // LẤY NGÔN NGỮ 
+    final lang = ref.watch(languageProvider); 
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -28,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
               child: const CircleAvatar(
                 radius: 48,
                 backgroundImage: NetworkImage(
-                  'https://i.pravatar.cc/150?img=11',
+                  'https://thf.bing.com/th/id/OIP.NifcFumqU3GDz-nL_NKS-AHaE-?o=7&cb=thfc1rm=3&rs=1&pid=ImgDetMain&o=7&rm=3',
                 ),
                 backgroundColor: Colors.transparent,
               ),
@@ -47,25 +47,25 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 40),
-            
+
             _buildSettingItem(
               context,
               Icons.person_outline_rounded,
               AppTranslations.getText(lang, 'account_settings'),
             ),
 
-            // NÚT ĐỔI NGÔN NGỮ
             _buildSettingItem(
               context,
               Icons.language_rounded,
               AppTranslations.getText(lang, 'language'),
               onTap: () {
                 // Chuyển đổi qua lại giữa 'vi' và 'en'
-                ref.read(languageProvider.notifier).state = 
-                    lang == 'vi' ? 'en' : 'vi';
+                ref.read(languageProvider.notifier).state = lang == 'vi'
+                    ? 'en'
+                    : 'vi';
               },
             ),
-            
+
             _buildSettingItem(
               context,
               Icons.security_rounded,
@@ -81,9 +81,7 @@ class ProfileScreen extends ConsumerWidget {
               Icons.help_outline_rounded,
               AppTranslations.getText(lang, 'help_support'),
             ),
-            const SizedBox(
-              height: 48,
-            ), 
+            const SizedBox(height: 48),
             _buildSettingItem(
               context,
               Icons.logout_rounded,
@@ -92,7 +90,7 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () async {
                 final supabase = ref.read(supabaseProvider);
                 final isar = ref.read(isarProvider);
-                
+
                 await supabase.auth.signOut();
                 await isar.writeTxn(() async {
                   await isar.clear();

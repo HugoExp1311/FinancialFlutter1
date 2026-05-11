@@ -23,23 +23,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       if (_isSignUp) {
-        // Đăng Ký mới
-        await ref.read(supabaseProvider).auth.signUp(
+        // đăng ký
+        await ref
+            .read(supabaseProvider)
+            .auth
+            .signUp(
               email: _emailController.text.trim(),
               password: _passwordController.text.trim(),
             );
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign up successful! You can now log in.')),
+          const SnackBar(
+            content: Text('Đăng ký thành công! Vui lòng đăng nhập.'),
+          ),
         );
         setState(() => _isSignUp = false);
       } else {
-        // Đăng nhập
-        await ref.read(supabaseProvider).auth.signInWithPassword(
+        // đăng nhập
+        await ref
+            .read(supabaseProvider)
+            .auth
+            .signInWithPassword(
               email: _emailController.text.trim(),
               password: _passwordController.text.trim(),
             );
-        // Supabase Auth Listener sẽ tự động chuyển màn hình sang MainNavigationScreen
       }
     } on AuthException catch (e) {
       if (!mounted) return;
@@ -49,7 +56,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unexpected error: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Đã xảy ra lỗi: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -76,7 +86,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo Icon
                 const Icon(
                   Icons.account_balance_wallet_rounded,
                   size: 80,
@@ -86,49 +95,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Text(
                   'Finance AI',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isSignUp 
-                      ? AppTranslations.getText(lang, 'create_account') 
+                  _isSignUp
+                      ? AppTranslations.getText(lang, 'create_account')
                       : AppTranslations.getText(lang, 'welcome_back'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Theme.of(context).colorScheme.onSurface.withAlpha(150),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha(150),
                   ),
                 ),
                 const SizedBox(height: 48),
 
-                // Form Email
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: AppTranslations.getText(lang, 'email'),
                     prefixIcon: const Icon(Icons.email_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Form Password
                 TextField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     labelText: AppTranslations.getText(lang, 'password'),
                     prefixIcon: const Icon(Icons.lock_rounded),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                // Nút Đăng nhập / Đăng ký
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleAuth,
                   style: ElevatedButton.styleFrom(
@@ -144,18 +153,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(
-                          _isSignUp 
-                              ? AppTranslations.getText(lang, 'signup') 
+                          _isSignUp
+                              ? AppTranslations.getText(lang, 'signup')
                               : AppTranslations.getText(lang, 'login'),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                 ),
                 const SizedBox(height: 16),
 
-                // Nút Đổi trạng thái
                 TextButton(
                   onPressed: () {
                     setState(() {

@@ -4,38 +4,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
 
-// =============================================================================
-// INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
-// =============================================================================
+// --- INFRASTRUCTURE ---
 
-/// Provider cho Isar Database — được override với giá trị thực tại main.dart.
 final isarProvider = Provider<Isar>((ref) {
   throw UnimplementedError('isarProvider must be overridden in main.dart');
 });
 
-/// Provider cho Supabase Client.
 final supabaseProvider = Provider<SupabaseClient>((ref) {
   return Supabase.instance.client;
 });
 
-// =============================================================================
-// DOMAIN PROVIDERS (Typed bằng Interface — không phụ thuộc Infrastructure cụ thể)
-// =============================================================================
+// --- REPOSITORY ---
 
-/// Provider trung tâm: trả về Interface [ITransactionRepository].
-///
-/// UI và Use Cases CHỈ biết Interface này, không biết Impl cụ thể.
-/// Khi chuyển sang Microservices, chỉ cần swap dòng này:
-///   TransactionRepositoryImpl → TransactionRepositoryHttp
+// Note: Đổi return sang TransactionRepositoryHttp nếu chuyển qua chạy Microservices
 final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
   final isar = ref.watch(isarProvider);
   final supabase = ref.watch(supabaseProvider);
   return TransactionRepositoryImpl(isar, supabase);
 });
 
-// =============================================================================
-// USE CASE PROVIDERS
-// =============================================================================
+// --- USE CASES ---
 
 final addTransactionUseCaseProvider = Provider<AddTransactionUseCase>((ref) {
   return AddTransactionUseCase(ref.watch(transactionRepositoryProvider));
@@ -53,18 +41,13 @@ final syncTransactionsUseCaseProvider = Provider<SyncTransactionsUseCase>((ref) 
   return SyncTransactionsUseCase(ref.watch(transactionRepositoryProvider));
 });
 
-// =============================================================================
-// STREAM / COMPUTED PROVIDERS (UI-facing)
-// =============================================================================
+// --- STREAM & COMPUTED LOGIC ---
 
-/// Lắng nghe danh sách giao dịch Realtime → trả ra [TransactionEntity] list.
-final transactionsStreamProvider =
-    StreamProvider<List<TransactionEntity>>((ref) {
+final transactionsStreamProvider = StreamProvider<List<TransactionEntity>>((ref) {
   final repository = ref.watch(transactionRepositoryProvider);
   return repository.watchTransactions();
 });
 
-/// Tính tổng chi tiêu từ stream hiện tại.
 final totalExpenseProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionsStreamProvider).value ?? [];
   return txs
@@ -72,7 +55,6 @@ final totalExpenseProvider = Provider<double>((ref) {
       .fold<double>(0.0, (sum, item) => sum + item.amount);
 });
 
-/// Tính tổng thu nhập từ stream hiện tại.
 final totalIncomeProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionsStreamProvider).value ?? [];
   return txs

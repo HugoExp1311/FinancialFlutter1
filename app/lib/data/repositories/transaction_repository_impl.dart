@@ -4,12 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/models/app_transaction.dart';
 
-/// [TransactionRepositoryImpl] — Phiên bản Monolith.
-///
-/// Implements [ITransactionRepository] bằng Isar (offline-first local DB)
-/// và Supabase (cloud sync). Đây là "Infrastructure Layer" của Monolith app.
-///
-/// ⚡ UI / Use Cases KHÔNG biết class này tồn tại — chúng chỉ thấy [ITransactionRepository].
+// Lớp triển khai các thao tác với DB
+// Lưu local bằng Isar, sau đó đồng bộ ngầm lên Supabase
 class TransactionRepositoryImpl implements ITransactionRepository {
   final Isar _isar;
   final SupabaseClient _supabase;
@@ -17,7 +13,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
   TransactionRepositoryImpl(this._isar, this._supabase);
 
   // ---------------------------------------------------------------------------
-  // READ
+  // READ (đọc dữ liệu)
   // ---------------------------------------------------------------------------
 
   @override
@@ -49,26 +45,26 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     return tx?.toEntity();
   }
 
-  // ---------------------------------------------------------------------------
-  // WRITE
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------
+  // WRITE (Thêm, Sửa, Xóa)
+  // -----------------------------------------------------------
 
   @override
   Future<void> addTransaction(TransactionEntity entity) async {
-    // Entity đã có syncId và updatedAt được sinh bởi Use Case
     final tx = AppTransaction.fromEntity(entity);
 
+    // Lưu vào Isar trước cho mượt UI
     await _isar.writeTxn(() async {
       await _isar.appTransactions.put(tx);
     });
 
-    // Âm thầm push lên Supabase dưới background
+    // Đẩy lên Supabase chạy background
     _pushToSupabase(tx);
   }
 
   @override
   Future<void> updateTransaction(TransactionEntity entity) async {
-    // Tìm record Isar cũ theo syncId để giữ lại localId (Isar Id)
+    // Tìm record cũ để giữ nguyên local Id
     final existing = await _isar.appTransactions
         .filter()
         .syncIdEqualTo(entity.syncId)
@@ -90,8 +86,10 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         .filter()
         .syncIdEqualTo(syncId)
         .findFirst();
-    if (tx == null) { return; }
+    
+    if (tx == null) return;
 
+    // Đánh dấu xóa thay vì xóa hẳn
     tx.isDeleted = true;
     tx.updatedAt = DateTime.now().toUtc();
     tx.isSynced = false;
@@ -103,13 +101,13 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     _pushToSupabase(tx);
   }
 
-  // ---------------------------------------------------------------------------
-  // SYNC
-  // ---------------------------------------------------------------------------
+  // ----------------------------------------------------------
+  // SYNC (đồng bộ Cloud)
+  // ----------------------------------------------------------
 
   @override
   Future<void> syncAll() async {
-    // BƯỚC 1: PUSH — Đẩy những gì chưa sync lên Cloud
+    // 1. PUSH: Đẩy data local chưa sync lên cloud
     final offlineTxs = await _isar.appTransactions
         .filter()
         .isSyncedEqualTo(false)
@@ -119,7 +117,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
       await _pushToSupabase(tx);
     }
 
-    // BƯỚC 2: PULL — Kéo những dữ liệu mới/bị sửa từ thiết bị khác về
+    // 2. PULL: Lấy data mới từ cloud về
     try {
       final response = await _supabase.from('transactions').select();
       final List<AppTransaction> pulledTxs = [];
@@ -132,8 +130,8 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
         final cloudUpdatedAt = DateTime.parse(row['updated_at']);
 
-        if (existingTx == null ||
-            existingTx.updatedAt.isBefore(cloudUpdatedAt)) {
+        // Chỉ cập nhật nếu trên cloud mới hơn
+        if (existingTx == null || existingTx.updatedAt.isBefore(cloudUpdatedAt)) {
           final newTx = existingTx ?? AppTransaction();
           newTx.syncId = row['sync_id'];
           newTx.amount = (row['amount'] as num).toDouble();
@@ -150,22 +148,22 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         }
       }
 
+      // Lưu hàng loạt vào local
       if (pulledTxs.isNotEmpty) {
         await _isar.writeTxn(() async {
           await _isar.appTransactions.putAll(pulledTxs);
         });
       }
     } catch (e) {
-      debugPrint('Pull from Supabase failed. Working with local data. Error: $e');
+      debugPrint('Lỗi khi Pull từ Supabase: $e');
     }
   }
 
   // ---------------------------------------------------------------------------
-  // PRIVATE HELPER
+  // HELPER
   // ---------------------------------------------------------------------------
 
-  /// Cố gắng đẩy 1 record lên Supabase. Nếu offline → thất bại yên lặng,
-  /// cờ isSynced = false sẽ chờ đến lần syncAll() tiếp theo.
+  // Hàm phụ: Upsert lên Supabase
   Future<void> _pushToSupabase(AppTransaction tx) async {
     try {
       final data = {
@@ -183,19 +181,16 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         'is_deleted': tx.isDeleted,
       };
 
-      await _supabase.from('transactions').upsert(
-            data,
-            onConflict: 'sync_id',
-          );
+      await _supabase.from('transactions').upsert(data, onConflict: 'sync_id');
 
+      // Thành công thì đổi cờ isSynced
       tx.isSynced = true;
       await _isar.writeTxn(() async {
         await _isar.appTransactions.put(tx);
       });
-    } on PostgrestException catch (e) {
-      debugPrint('Supabase 🔴 DB ERROR: ${e.message} | Hint: ${e.hint} | Code: ${e.code}');
     } catch (e) {
-      debugPrint('Supabase 🔴 NETWORK/EXCEPTION ERROR: $e');
+      // Nếu mất mạng thì rớt vào đây, kệ nó để lần sau syncAll xử lý
+      debugPrint('Lỗi Push Supabase (Có thể do mất mạng): $e');
     }
   }
 }
