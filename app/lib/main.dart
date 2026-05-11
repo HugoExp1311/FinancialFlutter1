@@ -5,10 +5,10 @@ import 'presentation/screens/auth_gate.dart';
 import 'presentation/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:isar_community/isar.dart';
+import 'package:isar/isar.dart';
 import 'package:app/data/models/app_transaction.dart';
-import 'package:app/data/models/app_user_profile.dart';
 import 'presentation/providers/app_providers.dart';
+import 'package:app/data/models/app_wallet.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -42,29 +42,19 @@ Future<void> main() async {
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // Khởi tạo Isar đa nền tảng
-  Isar? isar;
-  if (!kIsWeb) {
-    try {
-      // Trên Mobile (APK) / Windows, cần xin quyền ghi ổ cứng
-      final dir = await getApplicationDocumentsDirectory();
-      isar = await Isar.open(
-        [AppTransactionSchema, AppUserProfileSchema], 
-        directory: dir.path,
-      );
-      debugPrint('✅ Isar Database opened successfully at ${dir.path}');
-    } catch (e) {
-      debugPrint('❌ Isar Initialization Failed: $e');
-      // Nếu lỗi do file bị khóa (thường gặp trên Windows), Isar.getInstance() có thể giúp lấy lại instance cũ
-      isar = Isar.getInstance();
-    }
-  }
+  // Khởi tạo Isar
+  final dir = await getApplicationDocumentsDirectory();
+  final isar = await Isar.open(
+    [
+      AppTransactionSchema, 
+      AppWalletSchema, 
+    ], 
+    directory: dir.path
+  );
 
   runApp(
     ProviderScope(
-      overrides: [
-        if (isar != null) isarProvider.overrideWithValue(isar)
-      ],
+      overrides: [isarProvider.overrideWithValue(isar)],
       child: const FinanceApp(),
     ),
   );

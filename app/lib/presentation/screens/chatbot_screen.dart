@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:image_picker/image_picker.dart'; // Thêm dòng này để sử dụng ImagePicker
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChatMessage {
   final String text;
   final bool isUser;
+  final List<String> quickReplies = [
+    "🎯 Tư vấn tài chính",
+    "📊 Thống kê tháng này",
+    "💸 Mẹo tiết kiệm",
+  ];
 
   ChatMessage({required this.text, required this.isUser});
 }
@@ -22,7 +26,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
     return [
       ChatMessage(
         text:
-            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\nBạn nghe được ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
+            'Xin chào! Mình là Trợ lý Ảo Finance AI 🤖.\n Hôm nay bạn đã ăn gì, mua gì thì cứ nhắn mình ghi chép hộ nhé!',
         isUser: false,
       ),
     ];
@@ -62,42 +66,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   bool _isLoading = false;
 
-  // 1. THÊM 2 BIẾN NÀY ĐỂ XỬ LÝ ẢNH
-  final ImagePicker _picker = ImagePicker();
-  String? _base64Image;
-
-  // 2. THÊM HÀM CHỌN ẢNH NÀY
-  Future<void> _pickImage() async {
-    try {
-      // Trên Windows, ImageSource.gallery sẽ mở File Explorer
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery, 
-        maxWidth: 1000, // Nén kích thước để nhẹ payload
-        imageQuality: 50, // Nén chất lượng 50%
-      );
-
-      if (image != null) {
-        // Đọc file thành byte và mã hóa sang chuỗi Base64
-        final bytes = await image.readAsBytes();
-        _base64Image = base64Encode(bytes);
-
-        // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
-        ref.read(chatMessagesProvider.notifier).addMessage(
-              ChatMessage(text: '📸 [Đã đính kèm ảnh hóa đơn]', isUser: true),
-            );
-
-        // Tự động gọi hàm gửi API lên n8n
-        _handleSubmitted("Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.");
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi chọn ảnh: $e')),
-        );
-      }
-    }
-  }
-
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -114,14 +82,9 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     if (text.trim().isEmpty) return;
 
     _textController.clear();
-    
-    // Chỉ in tin nhắn ra màn hình NẾU nó KHÔNG PHẢI là câu lệnh quét ảnh tự động
-    if (text != "Hãy quét hình ảnh hóa đơn này, tính tổng tiền quy ra USD và ghi chép lại giúp tôi.") {
-      ref.read(chatMessagesProvider.notifier).addMessage(
-            ChatMessage(text: text, isUser: true),
-          );
-    }
-
+    ref.read(chatMessagesProvider.notifier).addMessage(
+          ChatMessage(text: text, isUser: true),
+        );
     setState(() {
       _isLoading = true;
     });
@@ -130,47 +93,43 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     // Lấy thông tin user hiện tại để gài vô gói gửi lên cho AI
     final user = Supabase.instance.client.auth.currentUser;
 
-    // // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
-    // final transactions = ref.read(transactionsStreamProvider).value ?? [];
-    // // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
-    // final sortedTxs = List<TransactionEntity>.from(transactions)
-    //   ..sort((a, b) => b.date.compareTo(a.date));
-    // final recentTxs = sortedTxs.take(15).toList();
+    // Rút trích lịch sử giao dịch hiện tại từ Isar Database (để phục vụ tính năng RAG - Phân tích AI)
+    final transactions = ref.read(transactionsStreamProvider).value ?? [];
+    // Sort mới nhất lên đầu và lấy 100 giao dịch để khỏi tràn Token LLM
+    final sortedTxs = List<TransactionEntity>.from(transactions)
+      ..sort((a, b) => b.date.compareTo(a.date));
+    final recentTxs = sortedTxs.take(100).toList();
 
-    // final String historyString = recentTxs
-    //     .map((t) {
-    //       final sign = t.isExpense ? 'Chi' : 'Thu';
-    //       // Format thủ công dd/mm/yyyy
-    //       final dateStr =
-    //           "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
-    //       return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
-    //     })
-    //     .join(" | ");
+    final String historyString = recentTxs
+        .map((t) {
+          final sign = t.isExpense ? 'Chi' : 'Thu';
+          // Format thủ công dd/mm/yyyy
+          final dateStr =
+              "${t.date.day.toString().padLeft(2, '0')}/${t.date.month.toString().padLeft(2, '0')}/${t.date.year}";
+          return "[$dateStr] ${t.categoryName} ($sign): ${t.amount} (Note: ${t.note ?? 'Trống'})";
+        })
+        .join(" | ");
 
     try {
+      final client = HttpClient();
+      // Bắn lệnh POST lên Cổng test của Docker n8n
+      final request = await client.postUrl(
+        Uri.parse('http://localhost:5678/webhook/ai-chat'),
+      );
+      request.headers.set('Content-Type', 'application/json');
       // Bọc dán dữ liệu vào thùng JSON
       final payload = {
         'message': text,
         'user_id': user?.id,
-      //  'history': historyString, // Điệp viên Data chìm
-        'current_date': DateTime.now().toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
-        if (_base64Image != null) 'image_base64': _base64Image, // THÊM DÒNG NÀY: Gửi ảnh nếu có
+        'history': historyString, // Điệp viên Data chìm
+        'current_date': DateTime.now()
+            .toIso8601String(), // Cấp ngày hiện tại cho AI biết Đường tính "Hôm nay", "Sáng nay"
       };
+      request.add(utf8.encode(jsonEncode(payload)));
 
-      // Xóa bộ nhớ tạm của ảnh sau khi đã gói hàng xong để không bị gửi kèm vào câu chat chữ tiếp theo
-      _base64Image = null;
-
-      // Lấy URL Gateway từ biến môi trường
-      final baseUrl = dotenv.env['MICROSERVICE_URL'] ?? 'http://localhost:3000';
-      
-      // Bắn lệnh POST lên Cổng API Gateway (tránh lỗi CORS và để Gateway định tuyến)
-      final response = await http.post(
-        Uri.parse('$baseUrl/chat/send'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(payload),
-      );
-
-      final responseBody = response.body;
+      // Chờ AI n8n trả kết quả về
+      final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
 
       if (mounted) {
         setState(() {
@@ -178,30 +137,21 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         });
 
         // Bóc tách JSON do n8n (qua tay Gemini) trả về
+        String resultText = responseBody.trim();
+
         try {
-          final responseJson = jsonDecode(responseBody);
-          final replyText =
-              responseJson['replyMessage'] ??
-              responseJson['bot_text'] ??
-              'Chưa bóc tách được câu trả lời!';
-
-          ref.read(chatMessagesProvider.notifier).addMessage(
-                ChatMessage(text: replyText, isUser: false),
-              );
-
-          // Fetch dữ liệu ngược lại từ Supabase về Local Database (Isar)
-          // Để màn hình Home và Statistics tự động cập nhật số tiền mới!
-          if (responseJson['replyMessage'] != null) {
-            ref.read(syncTransactionsUseCaseProvider).execute();
+          final decoded = jsonDecode(responseBody);
+          if (decoded is Map) {
+            resultText = decoded['replyMessage'] ?? decoded['output'] ?? responseBody;
           }
         } catch (e) {
-          // Lỗi Decode JSON
+          // Không phải JSON thì cứ để yên là responseBody
+        }
+
+        if (resultText.isNotEmpty) {
           ref.read(chatMessagesProvider.notifier).addMessage(
-                ChatMessage(
-                  text: 'AI n8n trả về kết quả không tương thích:\n$responseBody',
-                  isUser: false,
-                ),
-              );
+                ChatMessage(text: resultText, isUser: false),
+          );
         }
         _scrollToBottom();
       }
@@ -247,15 +197,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         centerTitle: true,
         elevation: 1,
         backgroundColor: Theme.of(context).cardTheme.color,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_sweep_rounded, color: AppTheme.expenseColor),
-            tooltip: 'Xóa đoạn chat',
-            onPressed: () {
-              ref.read(chatMessagesProvider.notifier).clear();
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -330,21 +271,26 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8, // Giới hạn chiều rộng
+            ),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: borderRadius,
-              border: isUser
-                  ? null
-                  : Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.1),
-                    ),
+              // ... (giữ nguyên border) ...
             ),
-            child: Text(
-              message.text,
-              style: TextStyle(color: textColor, fontSize: 16),
-            ),
+            // THAY THẾ Text() bằng MarkdownBody() bên dưới:
+            child: isUser 
+              ? Text(message.text, style: TextStyle(color: textColor, fontSize: 16))
+              : MarkdownBody(
+                  data: message.text,
+                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                    p: TextStyle(color: textColor, fontSize: 16, height: 1.5),
+                    strong: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                    listBullet: TextStyle(color: textColor, fontSize: 16),
+                    blockSpacing: 10,
+                  ),
+                ),
           ),
         ],
       ),
@@ -352,6 +298,13 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   }
 
   Widget _buildTextComposer() {
+    // Danh sách các gợi ý nhanh
+    final List<String> quickReplies = [
+      "🎯 Tư vấn tài chính",
+      "📊 Thống kê tháng này",
+      "💸 Mẹo tiết kiệm",
+    ];
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -365,52 +318,65 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column( // Chuyển sang Column để chứa hàng nút bấm phía trên
+          mainAxisSize: MainAxisSize.min,
           children: [
-
-            // THÊM NÚT CAMERA Ở ĐÂY
-            IconButton(
-              icon: const Icon(Icons.add_a_photo_rounded, color: AppTheme.textSubDark),
-              onPressed: _pickImage,
-              tooltip: 'Gửi hóa đơn',
+            // Hàng nút bấm Quick Replies
+            SizedBox(
+              height: 45,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(), // Hiệu ứng cuộn lò xo
+                children: quickReplies.map((text) => Padding(
+                  padding: const EdgeInsets.only(right: 10.0),
+                  child: ActionChip(
+                    label: Text(text, style: const TextStyle(fontSize: 12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: AppTheme.incomeColor.withOpacity(0.1),
+                    side: BorderSide(color: AppTheme.incomeColor.withOpacity(0.3)),
+                    onPressed: () => _handleSubmitted(text),
+                  ),
+                )).toList(),
+              ),
             ),
-            const SizedBox(width: 8), // Khoảng cách nhỏ giữa nút camera và ô nhập văn bản
-
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                textInputAction: TextInputAction.send,
-                onSubmitted: _handleSubmitted,
-                decoration: InputDecoration(
-                  hintText: 'Nhập mẩu tiền bạn vừa tiêu (vd: Đổ xăng 50k)...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surface,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _handleSubmitted,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập mẩu tiền bạn vừa tiêu (vd: Đổ xăng 50k)...',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
             const SizedBox(width: 12),
-            Container(
-              decoration: const BoxDecoration(
-                color: AppTheme.incomeColor,
-                shape: BoxShape.circle,
-              ),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.incomeColor,
+                    shape: BoxShape.circle,
+                  ),
               child: IconButton(
-                icon: const Icon(Icons.send_rounded, color: Colors.white),
-                onPressed: () => _handleSubmitted(_textController.text),
-              ),
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    onPressed: () => _handleSubmitted(_textController.text),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

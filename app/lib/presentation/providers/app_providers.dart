@@ -1,13 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar_community/isar.dart';
+import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:core_domain/core_domain.dart';
 import 'package:app/data/repositories/transaction_repository_impl.dart';
-import 'package:app/data/repositories/user_profile_repository_impl.dart';
-import 'package:app/data/repositories/transaction_repository_http.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter/foundation.dart';
-import 'package:app/data/repositories/user_profile_repository_web.dart';
+import '../../data/models/app_wallet.dart';
 
 // =============================================================================
 // INFRASTRUCTURE PROVIDERS (Monolith — Isar + Supabase)
@@ -32,29 +28,10 @@ final supabaseProvider = Provider<SupabaseClient>((ref) {
 /// UI và Use Cases CHỈ biết Interface này, không biết Impl cụ thể.
 /// Khi chuyển sang Microservices, chỉ cần swap dòng này:
 ///   TransactionRepositoryImpl → TransactionRepositoryHttp
-
 final transactionRepositoryProvider = Provider<ITransactionRepository>((ref) {
-  final mode = dotenv.env['ARCHITECTURE_MODE'] ?? 'monolith';
-  
-  if (mode == 'microservices') {
-    // BẬT Microservices: Client kết nối qua HTTP đến Server Dart (Task 4.2)
-    final baseUrl = dotenv.env['MICROSERVICE_URL'] ?? 'http://localhost:8080';
-    return TransactionRepositoryHttp(baseUrl: baseUrl);
-  }
-
-  // TẮT Microservices (Mặc định Monolith môn 1)
   final isar = ref.watch(isarProvider);
   final supabase = ref.watch(supabaseProvider);
   return TransactionRepositoryImpl(isar, supabase);
-});
-
-final userProfileRepositoryProvider = Provider<IUserProfileRepository>((ref) {
-  final supabase = ref.watch(supabaseProvider);
-  if (kIsWeb) {
-    return UserProfileRepositoryWeb(supabase);
-  }
-  final isar = ref.watch(isarProvider);
-  return UserProfileRepositoryImpl(isar, supabase);
 });
 
 // =============================================================================
@@ -88,11 +65,6 @@ final transactionsStreamProvider =
   return repository.watchTransactions();
 });
 
-final userProfileStreamProvider = StreamProvider<UserProfileEntity?>((ref) {
-  final repository = ref.watch(userProfileRepositoryProvider);
-  return repository.watchUserProfile();
-});
-
 /// Tính tổng chi tiêu từ stream hiện tại.
 final totalExpenseProvider = Provider<double>((ref) {
   final txs = ref.watch(transactionsStreamProvider).value ?? [];
@@ -107,4 +79,25 @@ final totalIncomeProvider = Provider<double>((ref) {
   return txs
       .where((t) => !t.isExpense && !t.isDeleted)
       .fold<double>(0.0, (sum, item) => sum + item.amount);
+});
+
+// Provider để theo dõi danh sách ví từ Isar theo thời gian thực
+final walletsStreamProvider = StreamProvider<List<WalletEntity>>((ref) {
+  final repository = ref.watch(transactionRepositoryProvider);
+  return repository.watchWallets(); 
+});
+
+
+// fetch dữ liệu từ bảng user_profile
+final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+  final user = Supabase.instance.client.auth.currentUser;
+  if (user == null) return null;
+
+  final response = await Supabase.instance.client
+      .from('user_profile')
+      .select()
+      .eq('id', user.id)
+      .maybeSingle();
+  
+  return response;
 });
