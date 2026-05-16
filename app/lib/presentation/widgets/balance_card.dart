@@ -8,10 +8,7 @@ class BalanceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Kéo dữ liệu giao dịch
     final txAsyncValue = ref.watch(transactionsStreamProvider);
-    
-    // 2. Kéo trạng thái cài đặt từ Global Provider
     final isHideBalance = ref.watch(hideBalanceProvider);
     final currentCurrency = ref.watch(currencyProvider);
 
@@ -31,117 +28,156 @@ class BalanceCard extends ConsumerWidget {
     }
 
     double total = income - expense;
-
-    // --- LOGIC XỬ LÝ ẨN/HIỆN & TIỀN TỆ ---
-    final String displayTotal = isHideBalance ? '******' : '$currentCurrency${total.toStringAsFixed(2)}';
-    final String displayIncome = isHideBalance ? '******' : '$currentCurrency${income.toStringAsFixed(2)}';
-    final String displayExpense = isHideBalance ? '******' : '$currentCurrency${expense.toStringAsFixed(2)}';
+    final String displayTotal = isHideBalance ? '••••••' : '$currentCurrency${total.toStringAsFixed(2)}';
+    final String displayIncome = isHideBalance ? '••••••' : '$currentCurrency${income.toStringAsFixed(2)}';
+    final String displayExpense = isHideBalance ? '••••••' : '$currentCurrency${expense.toStringAsFixed(2)}';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      height: 220,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF0F2027), // Đen huyền
-            Color(0xFF143048), // Xanh xám biển
-            Color(0xFF1F4C74), // Xanh đại dương (gradient mượt)
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF6366F1).withOpacity(0.3),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          const Text(
-            'Total Balance',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+          // Background Gradient
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF1E1E2E), // Midnight
+                  Color(0xFF4338CA), // Royal Indigo
+                  Color(0xFF6366F1), // Modern Violet
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            displayTotal, // Áp dụng chuỗi đã xử lý
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.05),
+              ),
             ),
           ),
-          const SizedBox(height: 32),
-          // Split Income and Expense
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildIncomeExpenseBlock(
-                context,
-                icon: Icons.arrow_downward,
-                color: AppTheme.incomeColor,
-                title: 'Income',
-                amount: displayIncome, // Áp dụng chuỗi đã xử lý
+          Positioned(
+            bottom: -20,
+            left: 20,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.03),
               ),
-              _buildIncomeExpenseBlock(
-                context,
-                icon: Icons.arrow_upward,
-                color: AppTheme.expenseColor,
-                title: 'Expenses',
-                amount: displayExpense, // Áp dụng chuỗi đã xử lý
-              ),
-            ],
+            ),
+          ),
+          // Nội dung chính
+          Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Balance',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          displayTotal,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Biểu tượng thẻ hoặc logo app mini
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 24),
+                    ),
+                  ],
+                ),
+                // Income & Expense Row 
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildInfoItem(
+                        context,
+                        icon: Icons.arrow_downward_rounded,
+                        color: const Color(0xFF34D399), // Emerald Green
+                        title: 'Income',
+                        amount: displayIncome,
+                      ),
+                      Container(width: 1, height: 30, color: Colors.white12),
+                      _buildInfoItem(
+                        context,
+                        icon: Icons.arrow_upward_rounded,
+                        color: const Color(0xFFF87171), // Soft Red
+                        title: 'Expenses',
+                        amount: displayExpense,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIncomeExpenseBlock(
-    BuildContext context, {
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String amount,
-  }) {
+  Widget _buildInfoItem(BuildContext context, {required IconData icon, required Color color, required String title, required String amount}) {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(
-              alpha: 0.2,
-            ), // Nhấn màu nền hơi mờ để nổi bật icon
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              amount,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text(title, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11)),
+            Text(amount, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
           ],
         ),
       ],
