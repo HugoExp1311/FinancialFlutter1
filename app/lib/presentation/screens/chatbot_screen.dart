@@ -143,7 +143,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     try {
       final client = HttpClient();
       final request = await client.postUrl(
-        Uri.parse('http://localhost:5678/webhook/ai-chat'),
+        Uri.parse('http://localhost:3000/chat/send'),
       );
       request.headers.set('Content-Type', 'application/json');
       
@@ -264,7 +264,10 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
               ],
               onChanged: (String? newLang) {
                 if (newLang != null) {
-                  ref.read(languageProvider.notifier).toggleLanguage();
+                  // Tránh lỗi MouseTracker trên Windows bằng cách trì hoãn việc đổi ngôn ngữ 1 nhịp microtask
+                  Future.microtask(() {
+                    ref.read(languageProvider.notifier).toggleLanguage();
+                  });
                 }
               },
             ),
