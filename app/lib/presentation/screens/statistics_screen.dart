@@ -513,7 +513,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     double otherSum = 0;
 
     for (int i = 0; i < sortedEntries.length; i++) {
-      if (i < 3) {
+      if (i < 4) {
         double percentage = totalFilterAmount > 0
             ? (sortedEntries[i].value / totalFilterAmount)
             : 0;
@@ -529,7 +529,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         legendWidgets.add(
           _buildLegendItem(
             categoryColor,
-            sortedEntries[i].key,
+            AppTranslations.getText(lang, sortedEntries[i].key.toLowerCase()),
             '${(percentage * 100).toStringAsFixed(1)}%',
           ),
         );
@@ -667,7 +667,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                 child: TransactionItem(
                   title: tx.note != null && tx.note!.isNotEmpty
                       ? tx.note!
-                      : tx.categoryName,
+                      : AppTranslations.getText(lang, tx.categoryName.toLowerCase()),
                   date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
                   amountText: '$sign$formattedAmt',
                   isExpense: tx.isExpense,

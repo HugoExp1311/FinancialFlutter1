@@ -130,7 +130,7 @@ class AppTranslations {
       'week': 'Tuần',
       'month': 'Tháng',
       'year': 'Năm',
-      'category_breakdown': 'Phân bổ danh mục',
+      'category_breakdown': 'Phân bổ theo danh mục',
       'details_by_date': 'Chi tiết theo ngày',
       'search_filter_active': 'Đã bật bộ lọc tìm kiếm!',
       'no_data_category': 'Không có dữ liệu danh mục này.',
