@@ -82,11 +82,43 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     } catch (e) { debugPrint('🔴 Pull Transactions failed: $e'); }
   }
 
-  // Các hàm override khác bà để trống hoặc throw Unimplemented để hết lỗi
+  // Các hàm override khác 
   @override Future<List<TransactionEntity>> getTransactions() async => [];
   @override Future<TransactionEntity?> getTransactionBySyncId(String s) async => null;
   @override Future<void> updateTransaction(TransactionEntity e) async {}
   @override Future<void> deleteTransaction(String s) async {}
   
-  Future<void> _pushToSupabase(AppTransaction tx) async { /* Logic push bà đã có sẵn */ }
+  Future<void> _pushToSupabase(AppTransaction tx) async {
+    try {
+      final data = {
+        'sync_id': tx.syncId,
+        'user_id': _supabase.auth.currentUser?.id,
+        'amount': tx.amount,
+        'is_expense': tx.isExpense,
+        'category_name': tx.categoryName,
+        'category_icon_code': tx.categoryIconCode,
+        'category_color_hex': tx.categoryColorHex,
+        'note': tx.note,
+        'date': tx.date.toUtc().toIso8601String(),
+        'updated_at': tx.updatedAt.toUtc().toIso8601String(),
+        'is_synced': true, 
+        'is_deleted': tx.isDeleted,
+        // thêm wallet_id
+        'wallet_id': tx.walletId, 
+      };
+
+      // Đẩy lên Supabase
+      await _supabase.from('transactions').upsert(data, onConflict: 'sync_id');
+
+      // Nếu API gọi thành công thì update cờ local là đã đồng bộ
+      tx.isSynced = true;
+      await _isar.writeTxn(() async {
+        await _isar.appTransactions.put(tx);
+      });
+      
+      debugPrint('🟢 Push Supabase thành công sync_id: ${tx.syncId}');
+    } catch (e) {
+      debugPrint('🔴 Lỗi Push Supabase: $e');
+    }
+  }
 }
