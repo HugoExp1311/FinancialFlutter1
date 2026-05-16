@@ -144,7 +144,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                 color: Theme.of(context).colorScheme.onSurface,
                               ),
                               decoration: InputDecoration(
-                                prefixText: '\$ ',
+                                prefixText: lang == 'en' ? '\$ ' : null,
                                 prefixStyle: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.bold,
@@ -152,8 +152,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                     context,
                                   ).colorScheme.onSurface,
                                 ),
+                                suffixText: lang == 'vi' ? ' đ' : null,
+                                suffixStyle: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                ),
                                 border: InputBorder.none,
-                                hintText: '0.00',
+                                hintText: lang == 'vi' ? '0' : '0.00',
                                 hintStyle: TextStyle(
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.2),
@@ -186,7 +194,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                               _selectedCategory == category['name'];
                           return _buildCategoryItem(
                             lang,
-                            category['name'], // giữ name gốc tiếng anh để xử lý logic
+                            category['name'],
                             category['icon'],
                             category['color'],
                             isSelected,
@@ -307,9 +315,14 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       return;
                     }
 
-                    final amountInput =
+                    final amountInputRaw =
                         double.tryParse(_amountController.text) ?? 0.0;
-                    if (amountInput <= 0) return;
+                    if (amountInputRaw <= 0) return;
+
+                    double amountInUsd = amountInputRaw;
+                    if (lang == 'vi') {
+                      amountInUsd = amountInputRaw / 25000;
+                    }
 
                     final selectedCat = _currentCategories.firstWhere(
                       (c) => c['name'] == _selectedCategory,
@@ -320,7 +333,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     await ref
                         .read(addTransactionUseCaseProvider)
                         .execute(
-                          amount: amountInput,
+                          amount: amountInUsd,
                           isExpense: _isExpense,
                           date: _selectedDate,
                           note: _noteController.text,

@@ -9,6 +9,7 @@ import '../utils/category_utils.dart';
 import 'package:core_domain/core_domain.dart';
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
+import '../utils/format_utils.dart';
 
 class StatisticsScreen extends ConsumerStatefulWidget {
   const StatisticsScreen({super.key});
@@ -386,19 +387,21 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         }
       }
     }
+    
     double net = income - expense;
 
     String title = AppTranslations.getText(lang, 'net_income');
-    String amount = "\$${net.toStringAsFixed(2)}";
+    String sign = net < 0 ? '-' : '';
+    String amount = "$sign${FormatUtils.formatCurrency(net.abs(), lang)}";
     Color mainColor = AppTheme.primaryColor;
 
     if (_statType == 1) {
       title = AppTranslations.getText(lang, 'total_expense');
-      amount = "\$${expense.toStringAsFixed(2)}";
+      amount = FormatUtils.formatCurrency(expense, lang);
       mainColor = AppTheme.expenseColor;
     } else if (_statType == 2) {
       title = AppTranslations.getText(lang, 'total_income');
-      amount = "\$${income.toStringAsFixed(2)}";
+      amount = FormatUtils.formatCurrency(income, lang);
       mainColor = AppTheme.incomeColor;
     }
 
@@ -651,6 +654,10 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
           itemCount: filteredTxs.length,
           itemBuilder: (context, index) {
             final tx = filteredTxs[index];
+            
+            final sign = tx.isExpense ? '-' : '+';
+            final formattedAmt = FormatUtils.formatCurrency(tx.amount.abs(), lang);
+
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: GestureDetector(
@@ -662,7 +669,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
                       ? tx.note!
                       : tx.categoryName,
                   date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                  amount: tx.isExpense ? -tx.amount : tx.amount,
+                  amountText: '$sign$formattedAmt',
+                  isExpense: tx.isExpense,
                   icon: CategoryUtils.getIcon(tx.categoryName),
                   iconColor: CategoryUtils.getColor(tx.categoryName),
                 ),
@@ -719,7 +727,6 @@ class _LineChartPainter extends CustomPainter {
         double prevNormalized = (points[i - 1] - minVal) / range;
         double prevY = size.height * 0.9 - (prevNormalized * size.height * 0.8);
 
-        // Vẽ đường cong Bezier
         path.cubicTo(prevX + stepX / 2.5, prevY, x - stepX / 2.5, y, x, y);
       }
     }

@@ -91,7 +91,14 @@ class TransactionActions {
   ) {
     final lang = ref.read(languageProvider);
 
-    final amountController = TextEditingController(text: tx.amount.toString());
+    double displayAmount = tx.amount;
+    if (lang == 'vi') {
+      displayAmount = tx.amount * 25000;
+    }
+    
+    final amountController = TextEditingController(
+      text: lang == 'vi' ? displayAmount.toStringAsFixed(0) : displayAmount.toStringAsFixed(2)
+    );
     final noteController = TextEditingController(text: tx.note ?? '');
 
     final List<Map<String, dynamic>> expenseCategories = [
@@ -160,7 +167,8 @@ class TransactionActions {
                     ),
                     decoration: InputDecoration(
                       labelText: AppTranslations.getText(lang, 'amount'),
-                      prefixIcon: const Icon(Icons.attach_money_rounded),
+                      prefixText: lang == 'en' ? '\$ ' : null,
+                      suffixText: lang == 'vi' ? ' đ' : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -237,8 +245,13 @@ class TransactionActions {
                     ),
                   ),
                   onPressed: () async {
-                    final newAmount = double.tryParse(amountController.text);
-                    if (newAmount == null) return;
+                    final rawAmount = double.tryParse(amountController.text);
+                    if (rawAmount == null) return;
+
+                    double amountInUsd = rawAmount;
+                    if (lang == 'vi') {
+                      amountInUsd = rawAmount / 25000;
+                    }
 
                     final selectedCatConfig = currentCategories.firstWhere(
                       (c) => c['name'] == selectedCategory,
@@ -247,7 +260,7 @@ class TransactionActions {
                     final icon = selectedCatConfig['icon'] as IconData;
 
                     final updatedTx = tx.copyWith(
-                      amount: newAmount,
+                      amount: amountInUsd,
                       note: noteController.text,
                       categoryName:
                           selectedCategory,

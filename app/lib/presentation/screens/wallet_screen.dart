@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
+import '../utils/format_utils.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -21,9 +22,6 @@ class WalletScreen extends ConsumerWidget {
         }
       }
     }
-
-    final mainWalletBalance = (totalNet * 1).toStringAsFixed(2);
-    final savingsBalance = (totalNet * 0).toStringAsFixed(2);
 
     return SafeArea(
       child: Padding(
@@ -43,7 +41,7 @@ class WalletScreen extends ConsumerWidget {
               color2: const Color(0xFF1F4C74),
               name: AppTranslations.getText(lang, 'main_wallet'),
               number: '**** **** **** 1234',
-              balance: '\$$mainWalletBalance',
+              balance: FormatUtils.formatCurrency(totalNet, lang),
             ),
             const SizedBox(height: 20),
             _buildCreditCard(
@@ -53,7 +51,7 @@ class WalletScreen extends ConsumerWidget {
               color2: const Color(0xFF4A00E0),
               name: AppTranslations.getText(lang, 'savings'),
               number: '**** **** **** 5678',
-              balance: '\$$savingsBalance',
+              balance: FormatUtils.formatCurrency(0, lang),
             ),
             const SizedBox(height: 32),
             InkWell(

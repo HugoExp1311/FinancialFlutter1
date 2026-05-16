@@ -58,12 +58,37 @@ class ProfileScreen extends ConsumerWidget {
               context,
               Icons.language_rounded,
               AppTranslations.getText(lang, 'language'),
-              onTap: () {
-                // Chuyển đổi qua lại giữa 'vi' và 'en'
-                ref.read(languageProvider.notifier).state = lang == 'vi'
-                    ? 'en'
-                    : 'vi';
-              },
+              trailing: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: lang,
+                  dropdownColor: Theme.of(context).cardTheme.color,
+                  borderRadius: BorderRadius.circular(16),
+                  icon: Icon(
+                    Icons.arrow_drop_down_rounded,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'en',
+                      child: Text('English'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'vi',
+                      child: Text('Tiếng Việt'),
+                    ),
+                  ],
+                  onChanged: (String? newLang) {
+                    if (newLang != null) {
+                      ref.read(languageProvider.notifier).state = newLang;
+                    }
+                  },
+                ),
+              ),
             ),
 
             _buildSettingItem(
@@ -110,13 +135,14 @@ class ProfileScreen extends ConsumerWidget {
     String title, {
     bool isDanger = false,
     VoidCallback? onTap,
+    Widget? trailing,
   }) {
     final color = isDanger
         ? AppTheme.expenseColor
         : Theme.of(context).colorScheme.onSurface;
 
     return InkWell(
-      onTap: onTap ?? () {},
+      onTap: trailing != null ? null : (onTap ?? () {}),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -144,7 +170,9 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            if (!isDanger)
+            if (trailing != null)
+              trailing
+            else if (!isDanger)
               Icon(
                 Icons.chevron_right_rounded,
                 color: Theme.of(

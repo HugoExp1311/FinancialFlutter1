@@ -8,6 +8,7 @@ import '../utils/transaction_actions.dart';
 import '../utils/category_utils.dart';
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
+import '../utils/format_utils.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -49,7 +50,6 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            // Danh sách giao dịch
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
@@ -89,6 +89,9 @@ class HomeScreen extends ConsumerWidget {
               tx.categoryName.toLowerCase(),
             );
 
+            final sign = tx.isExpense ? '-' : '+';
+            final formattedAmt = FormatUtils.formatCurrency(tx.amount.abs(), lang);
+
             return GestureDetector(
               onLongPress: () =>
                   TransactionActions.showOptions(context, ref, tx),
@@ -96,7 +99,8 @@ class HomeScreen extends ConsumerWidget {
               child: TransactionItem(
                 title: displayCategoryName,
                 date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                amount: tx.isExpense ? -tx.amount : tx.amount,
+                amountText: '$sign$formattedAmt',
+                isExpense: tx.isExpense,
                 icon: CategoryUtils.getIcon(
                   tx.categoryName,
                 ),

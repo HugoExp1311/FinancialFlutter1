@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
+import '../utils/format_utils.dart';
 
 class BalanceCard extends ConsumerWidget {
   const BalanceCard({super.key});
@@ -64,7 +65,7 @@ class BalanceCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${total.toStringAsFixed(2)}',
+            FormatUtils.formatCurrency(total, lang),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -81,14 +82,14 @@ class BalanceCard extends ConsumerWidget {
                 icon: Icons.arrow_downward,
                 color: AppTheme.incomeColor,
                 title: AppTranslations.getText(lang, 'income'),
-                amount: '\$${income.toStringAsFixed(2)}',
+                amount: FormatUtils.formatCurrency(income, lang),
               ),
               _buildIncomeExpenseBlock(
                 context,
                 icon: Icons.arrow_upward,
                 color: AppTheme.expenseColor,
                 title: AppTranslations.getText(lang, 'expense'),
-                amount: '\$${expense.toStringAsFixed(2)}',
+                amount: FormatUtils.formatCurrency(expense, lang),
               ),
             ],
           ),
