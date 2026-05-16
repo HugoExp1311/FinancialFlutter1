@@ -10,7 +10,7 @@ class LanguageNotifier extends Notifier<String> {
     state = lang;
   }
   
-  void toggle() {
+  void toggleLanguage() {
     state = state == 'vi' ? 'en' : 'vi';
   }
 }
