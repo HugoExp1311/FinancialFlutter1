@@ -101,3 +101,13 @@ final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
   
   return response;
 });
+
+// =============================================================================
+// GLOBAL SETTINGS PROVIDERS
+// =============================================================================
+
+/// Trạng thái ẩn/hiện số dư ở màn hình Home
+final hideBalanceProvider = StateProvider<bool>((ref) => false);
+
+/// Trạng thái đơn vị tiền tệ (Mặc định là $)
+final currencyProvider = StateProvider<String>((ref) => '\$');

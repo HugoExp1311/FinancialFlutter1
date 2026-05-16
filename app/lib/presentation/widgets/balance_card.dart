@@ -8,7 +8,12 @@ class BalanceCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Kéo dữ liệu giao dịch
     final txAsyncValue = ref.watch(transactionsStreamProvider);
+    
+    // 2. Kéo trạng thái cài đặt từ Global Provider
+    final isHideBalance = ref.watch(hideBalanceProvider);
+    final currentCurrency = ref.watch(currencyProvider);
 
     double income = 0;
     double expense = 0;
@@ -26,6 +31,12 @@ class BalanceCard extends ConsumerWidget {
     }
 
     double total = income - expense;
+
+    // --- LOGIC XỬ LÝ ẨN/HIỆN & TIỀN TỆ ---
+    final String displayTotal = isHideBalance ? '******' : '$currentCurrency${total.toStringAsFixed(2)}';
+    final String displayIncome = isHideBalance ? '******' : '$currentCurrency${income.toStringAsFixed(2)}';
+    final String displayExpense = isHideBalance ? '******' : '$currentCurrency${expense.toStringAsFixed(2)}';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -61,7 +72,7 @@ class BalanceCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${total.toStringAsFixed(2)}',
+            displayTotal, // Áp dụng chuỗi đã xử lý
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -79,14 +90,14 @@ class BalanceCard extends ConsumerWidget {
                 icon: Icons.arrow_downward,
                 color: AppTheme.incomeColor,
                 title: 'Income',
-                amount: '\$${income.toStringAsFixed(2)}',
+                amount: displayIncome, // Áp dụng chuỗi đã xử lý
               ),
               _buildIncomeExpenseBlock(
                 context,
                 icon: Icons.arrow_upward,
                 color: AppTheme.expenseColor,
                 title: 'Expenses',
-                amount: '\$${expense.toStringAsFixed(2)}',
+                amount: displayExpense, // Áp dụng chuỗi đã xử lý
               ),
             ],
           ),
