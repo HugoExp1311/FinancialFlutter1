@@ -57,11 +57,6 @@ const AppTransactionSchema = CollectionSchema(
       name: r'walletId',
       type: IsarType.string,
     ),
-    r'walletType': PropertySchema(
-      id: 12,
-      name: r'walletType',
-      type: IsarType.string,
-    ),
   },
 
   estimateSize: _appTransactionEstimateSize,
@@ -165,7 +160,6 @@ int _appTransactionEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
-  bytesCount += 3 + object.walletType.length * 3;
   return bytesCount;
 }
 
@@ -187,7 +181,6 @@ void _appTransactionSerialize(
   writer.writeString(offsets[9], object.syncId);
   writer.writeDateTime(offsets[10], object.updatedAt);
   writer.writeString(offsets[11], object.walletId);
-  writer.writeString(offsets[12], object.walletType);
 }
 
 AppTransaction _appTransactionDeserialize(
@@ -210,7 +203,6 @@ AppTransaction _appTransactionDeserialize(
   object.syncId = reader.readString(offsets[9]);
   object.updatedAt = reader.readDateTime(offsets[10]);
   object.walletId = reader.readStringOrNull(offsets[11]);
-  object.walletType = reader.readString(offsets[12]);
   return object;
 }
 
@@ -245,8 +237,6 @@ P _appTransactionDeserializeProp<P>(
       return (reader.readDateTime(offset)) as P;
     case 11:
       return (reader.readStringOrNull(offset)) as P;
-    case 12:
-      return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1745,147 +1735,6 @@ extension AppTransactionQueryFilter
       );
     });
   }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeEqualTo(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'walletType',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeStartsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeEndsWith(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'walletType',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'walletType',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'walletType', value: ''),
-      );
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
-  walletTypeIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'walletType', value: ''),
-      );
-    });
-  }
 }
 
 extension AppTransactionQueryObject
@@ -2050,20 +1899,6 @@ extension AppTransactionQuerySortBy
   sortByWalletIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'walletId', Sort.desc);
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
-  sortByWalletType() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'walletType', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
-  sortByWalletTypeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'walletType', Sort.desc);
     });
   }
 }
@@ -2238,20 +2073,6 @@ extension AppTransactionQuerySortThenBy
       return query.addSortBy(r'walletId', Sort.desc);
     });
   }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
-  thenByWalletType() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'walletType', Sort.asc);
-    });
-  }
-
-  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
-  thenByWalletTypeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'walletType', Sort.desc);
-    });
-  }
 }
 
 extension AppTransactionQueryWhereDistinct
@@ -2339,14 +2160,6 @@ extension AppTransactionQueryWhereDistinct
       return query.addDistinctBy(r'walletId', caseSensitive: caseSensitive);
     });
   }
-
-  QueryBuilder<AppTransaction, AppTransaction, QDistinct> distinctByWalletType({
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'walletType', caseSensitive: caseSensitive);
-    });
-  }
 }
 
 extension AppTransactionQueryProperty
@@ -2429,12 +2242,6 @@ extension AppTransactionQueryProperty
   QueryBuilder<AppTransaction, String?, QQueryOperations> walletIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'walletId');
-    });
-  }
-
-  QueryBuilder<AppTransaction, String, QQueryOperations> walletTypeProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'walletType');
     });
   }
 }

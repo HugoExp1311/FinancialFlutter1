@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/currency_provider.dart';
 import '../theme/app_theme.dart';
 
-class TransactionItem extends StatelessWidget {
+class TransactionItem extends ConsumerWidget {
   final String title;
   final String date;
   final double amount;
@@ -18,8 +20,9 @@ class TransactionItem extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     bool isExpense = amount < 0;
+    final currencyNotifier = ref.watch(currencyProvider.notifier);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -75,7 +78,7 @@ class TransactionItem extends StatelessWidget {
           ),
           // Amount Format
           Text(
-            '${isExpense ? '-' : '+'}\$${amount.abs().toStringAsFixed(2)}',
+            '${isExpense ? '-' : '+'}${currencyNotifier.formatAmount(amount.abs())}',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,

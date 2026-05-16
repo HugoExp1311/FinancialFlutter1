@@ -13,8 +13,13 @@ import '../utils/app_translations.dart';
 class ChatMessage {
   final String text;
   final bool isUser;
+  final String? imagePath; // Đường dẫn ảnh (nếu có)
 
-  ChatMessage({required this.text, required this.isUser});
+  ChatMessage({
+    required this.text, 
+    required this.isUser,
+    this.imagePath,
+  });
 }
 
 class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
@@ -65,6 +70,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
 
   final ImagePicker _picker = ImagePicker();
   String? _base64Image;
+  String? _lastImagePath; // Lưu đường dẫn ảnh cuối cùng
 
   Future<void> _pickImage() async {
     final lang = ref.read(languageProvider); // Đọc ngôn ngữ hiện tại
@@ -78,10 +84,15 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       if (image != null) {
         final bytes = await image.readAsBytes();
         _base64Image = base64Encode(bytes);
+        _lastImagePath = image.path; // Lưu đường dẫn ảnh
 
-        // Hiển thị tin nhắn người dùng "gửi ảnh" lên màn hình chat
+        // Hiển thị tin nhắn người dùng "gửi ảnh" kèm ảnh lên màn hình chat
         ref.read(chatMessagesProvider.notifier).addMessage(
-              ChatMessage(text: AppTranslations.getText(lang, 'image_attached'), isUser: true),
+              ChatMessage(
+                text: AppTranslations.getText(lang, 'image_attached'), 
+                isUser: true,
+                imagePath: image.path, // Gửi kèm đường dẫn ảnh
+              ),
             );
 
         // Tự động gọi hàm gửi API lên n8n
@@ -221,6 +232,44 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         centerTitle: true,
         elevation: 1,
         backgroundColor: Theme.of(context).cardTheme.color,
+        actions: [
+          // Language Dropdown
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: DropdownButton<String>(
+              value: lang,
+              underline: const SizedBox(),
+              icon: const Icon(Icons.language_rounded, color: AppTheme.primaryColor),
+              items: const [
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Row(
+                    children: [
+                      Text('🇬🇧', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text('English'),
+                    ],
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'vi',
+                  child: Row(
+                    children: [
+                      Text('🇻🇳', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text('Tiếng Việt'),
+                    ],
+                  ),
+                ),
+              ],
+              onChanged: (String? newLang) {
+                if (newLang != null) {
+                  ref.read(languageProvider.notifier).toggleLanguage();
+                }
+              },
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -299,6 +348,52 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
       child: Column(
         crossAxisAlignment: alignment,
         children: [
+          // Hiển thị ảnh nếu có
+          if (message.imagePath != null)
+            GestureDetector(
+              onTap: () {
+                // Hiển thị ảnh full screen khi tap
+                showDialog(
+                  context: context,
+                  builder: (context) => Dialog(
+                    backgroundColor: Colors.transparent,
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Image.file(
+                            File(message.imagePath!),
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        Positioned(
+                          top: 40,
+                          right: 20,
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                constraints: const BoxConstraints(maxWidth: 200, maxHeight: 200),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primaryColor, width: 2),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.file(
+                    File(message.imagePath!),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(

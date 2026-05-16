@@ -36,7 +36,8 @@ class AppTransaction {
   bool isDeleted = false;
 
   // --- [WALLET CATEGORIZATION] ---
-  late String walletType; // 'main' or 'savings'
+  // COMMENTED: Using walletId instead
+  // late String walletType; // 'main' or 'savings'
 
   // ---------------------------------------------------------------------------
   // MAPPER: AppTransaction (Isar) ↔ TransactionEntity (Domain)
@@ -57,7 +58,7 @@ class AppTransaction {
       updatedAt: updatedAt,
       isSynced: isSynced,
       isDeleted: isDeleted,
-      walletType: walletType,
+      // COMMENTED: walletType: walletType,
     );
   }
 
@@ -75,7 +76,7 @@ class AppTransaction {
     updatedAt = entity.updatedAt;
     isSynced = entity.isSynced;
     isDeleted = entity.isDeleted;
-    walletType = entity.walletType;
+    // COMMENTED: walletType = entity.walletType;
   }
 
   static AppTransaction fromEntity(TransactionEntity entity) {
@@ -93,7 +94,7 @@ class AppTransaction {
     categoryColorHex = row['category_color_hex'];
     note = row['note'];
     walletId = row['wallet_id'];
-    walletType = row['wallet_type'] ?? 'main';
+    // COMMENTED: walletType = row['wallet_type'] ?? 'main';
     date = DateTime.parse(row['date']);
     updatedAt = DateTime.parse(row['updated_at']);
     isDeleted = row['is_deleted'];

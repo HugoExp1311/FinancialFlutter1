@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../providers/language_provider.dart';
+import '../providers/currency_provider.dart';
 import '../utils/app_translations.dart';
 
 class BalanceCard extends ConsumerWidget {
@@ -12,6 +13,7 @@ class BalanceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
     final lang = ref.watch(languageProvider);
+    final currencyNotifier = ref.watch(currencyProvider.notifier);
 
     double income = 0;
     double expense = 0;
@@ -64,7 +66,7 @@ class BalanceCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${total.toStringAsFixed(2)}',
+            currencyNotifier.formatAmount(total),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 36,
@@ -82,14 +84,14 @@ class BalanceCard extends ConsumerWidget {
                 icon: Icons.arrow_downward,
                 color: AppTheme.incomeColor,
                 title: AppTranslations.getText(lang, 'income'),
-                amount: '\$${income.toStringAsFixed(2)}',
+                amount: currencyNotifier.formatAmount(income),
               ),
               _buildIncomeExpenseBlock(
                 context,
                 icon: Icons.arrow_upward,
                 color: AppTheme.expenseColor,
                 title: AppTranslations.getText(lang, 'expense'),
-                amount: '\$${expense.toStringAsFixed(2)}',
+                amount: currencyNotifier.formatAmount(expense),
               ),
             ],
           ),

@@ -111,48 +111,114 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageProvider);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final profileAsync = ref.watch(profileProvider);
+
+    return profileAsync.when(
+      data: (profile) {
+        // Extract user info from profile
+        final String firstName = profile?['first_name'] as String? ?? '';
+        final String lastName = profile?['last_name'] as String? ?? '';
+        String displayName = '$firstName $lastName'.trim();
+        
+        // Fallback to email username if no name
+        if (displayName.isEmpty) {
+          final user = ref.read(supabaseProvider).auth.currentUser;
+          displayName = user?.email?.split('@')[0] ?? 'User';
+        }
+
+        final String avatarUrl = (profile?['avatar_url'] as String?) ?? 
+                                 'https://i.pravatar.cc/150?img=11';
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              AppTranslations.getText(lang, 'welcome'),
-              style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppTranslations.getText(lang, 'welcome'),
+                  style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  displayName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Alex Johnson!', // tên mẫu
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: AppTranslations.getText(lang, 'sync_data'),
+                  icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')),
+                        duration: const Duration(seconds: 1),
+                      ),
+                    );
+                    await ref.read(syncTransactionsUseCaseProvider).execute();
+                  },
+                ),
+                const SizedBox(width: 4),
+                CircleAvatar(
+                  radius: 20,
+                  backgroundImage: NetworkImage(avatarUrl),
+                  backgroundColor: Colors.transparent,
+                ),
+              ],
             ),
           ],
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: AppTranslations.getText(lang, 'sync_data'),
-              icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
-              onPressed: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-                await ref.read(syncTransactionsUseCaseProvider).execute();
-              },
-            ),
-            const SizedBox(width: 4),
-            const CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-              backgroundColor: Colors.transparent,
-            ),
-          ],
-        ),
-      ],
+        );
+      },
+      loading: () => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppTranslations.getText(lang, 'welcome'),
+                style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Loading...',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const CircleAvatar(
+            radius: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ],
+      ),
+      error: (_, __) => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppTranslations.getText(lang, 'welcome'),
+                style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'User',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const CircleAvatar(
+            radius: 20,
+            backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
+          ),
+        ],
+      ),
     );
   }
 }
