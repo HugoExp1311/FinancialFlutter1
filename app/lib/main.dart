@@ -5,7 +5,7 @@ import 'presentation/screens/auth_gate.dart';
 import 'presentation/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:app/data/models/app_transaction.dart';
 import 'presentation/providers/app_providers.dart';
 import 'package:app/data/models/app_wallet.dart';

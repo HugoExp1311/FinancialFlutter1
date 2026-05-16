@@ -30,6 +30,7 @@ class TransactionEntity extends Equatable {
   final bool isSynced;
   final bool isDeleted;
   final String? walletId;
+  final String walletType; // 'main' or 'savings'
 
   const TransactionEntity({
     this.localId,
@@ -45,6 +46,7 @@ class TransactionEntity extends Equatable {
     this.isSynced = false,
     this.isDeleted = false,
     this.walletId,
+    this.walletType = 'main',
   });
 
   /// Tạo bản sao với một số field được thay đổi (Immutable pattern).
@@ -62,6 +64,7 @@ class TransactionEntity extends Equatable {
     bool? isSynced,
     bool? isDeleted,
     String? walletId,
+    String? walletType,
   }) {
     return TransactionEntity(
       localId: localId ?? this.localId,
@@ -77,6 +80,7 @@ class TransactionEntity extends Equatable {
       isSynced: isSynced ?? this.isSynced,
       isDeleted: isDeleted ?? this.isDeleted,
       walletId: walletId ?? this.walletId,
+      walletType: walletType ?? this.walletType,
     );
   }
 
@@ -94,6 +98,7 @@ class TransactionEntity extends Equatable {
         isSynced,
         isDeleted,
         walletId,
+        walletType,
       ];
 
   @override

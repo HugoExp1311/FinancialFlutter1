@@ -93,6 +93,7 @@ class AppTransaction {
     categoryColorHex = row['category_color_hex'];
     note = row['note'];
     walletId = row['wallet_id'];
+    walletType = row['wallet_type'] ?? 'main';
     date = DateTime.parse(row['date']);
     updatedAt = DateTime.parse(row['updated_at']);
     isDeleted = row['is_deleted'];

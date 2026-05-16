@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:core_domain/core_domain.dart';
 
 part 'app_wallet.g.dart';

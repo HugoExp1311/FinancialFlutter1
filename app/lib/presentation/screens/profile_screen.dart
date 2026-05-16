@@ -61,8 +61,7 @@ class ProfileScreen extends ConsumerWidget {
               AppTranslations.getText(lang, 'language'),
               onTap: () {
                 // Chuyển đổi qua lại giữa 'vi' và 'en'
-                ref.read(languageProvider.notifier).state = 
-                    lang == 'vi' ? 'en' : 'vi';
+                ref.read(languageProvider.notifier).toggle();
               },
             ),
             
