@@ -34,16 +34,17 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  isar_community: ^3.3.2
+  isar_community_flutter_libs: ^3.3.2
   path_provider: ^2.1.5
   supabase_flutter: ^2.12.0
   uuid: ^4.5.3
   flutter_dotenv: ^6.0.0
-  flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.6.1
+  flutter_riverpod: ^3.3.1
+  riverpod_annotation: ^4.0.2
   window_manager: ^0.5.1
   equatable: ^2.0.5
+  flutter_markdown: ^0.7.3+1
   # --- Local packages (Monorepo) ---
   core_domain:
     path: ../packages/core_domain
@@ -60,9 +61,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  build_runner: ^2.4.13
-  isar_generator: ^3.1.0+1
-  riverpod_generator: ^2.4.0
+  build_runner: ^2.15.0
+  isar_community_generator: ^3.3.2
+  riverpod_generator: ^4.0.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
