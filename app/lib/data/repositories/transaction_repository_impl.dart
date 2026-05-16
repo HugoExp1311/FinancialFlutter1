@@ -40,14 +40,14 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     final String newId = (entity.syncId.isEmpty) ? _uuid.v4() : entity.syncId;
     final tx = AppTransaction.fromEntity(entity.copyWith(syncId: newId));
     
-    // Lưu Local trước để UI nảy số ngay lập tức
+    // Lưu Local trước 
     await _isar.writeTxn(() => _isar.appTransactions.put(tx));
     // Đẩy lên Cloud
     await _pushToSupabase(tx);
   }
 
   // ==========================================================
-  // 2. SỬA GIAO DỊCH (Đã fix lỗi chuyển Ví)
+  // 2. SỬA GIAO DỊCH 
   // ==========================================================
   @override
   Future<void> updateTransaction(TransactionEntity entity) async {
@@ -60,13 +60,13 @@ class TransactionRepositoryImpl implements ITransactionRepository {
       
       // Lưu Local
       await _isar.writeTxn(() => _isar.appTransactions.put(existingTx));
-      // Đẩy lên Cloud (Dùng upsert sẽ tự động ghi đè data cũ)
+      // Đẩy lên Cloud 
       await _pushToSupabase(existingTx);
     }
   }
 
   // ==========================================================
-  // 3. XÓA GIAO DỊCH (Soft Delete)
+  // 3. XÓA GIAO DỊCH
   // ==========================================================
   @override 
   Future<void> deleteTransaction(String syncId) async {
@@ -131,7 +131,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
   @override Future<TransactionEntity?> getTransactionBySyncId(String s) async => null;
   
   // ==========================================================
-  // HÀM ĐẨY LÊN CLOUD CHUNG CHO CẢ THÊM/SỬA/XÓA
+  // HÀM SYNC CLOUD 
   // ==========================================================
   Future<void> _pushToSupabase(AppTransaction tx) async {
     try {
@@ -151,10 +151,10 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         'wallet_id': tx.walletId, 
       };
 
-      // Đẩy lên Supabase (Upsert sẽ Thêm mới nếu ID chưa có, và Sửa đè nếu ID đã tồn tại)
+      // Đẩy lên Supabase 
       await _supabase.from('transactions').upsert(data, onConflict: 'sync_id');
 
-      // Nếu API gọi thành công thì update cờ local là đã đồng bộ
+      // Nếu API gọi thành công thì update cờ local = đồng bộ
       tx.isSynced = true;
       await _isar.writeTxn(() async {
         await _isar.appTransactions.put(tx);

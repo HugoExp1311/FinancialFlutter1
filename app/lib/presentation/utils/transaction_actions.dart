@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 
 class TransactionActions {
-  /// Hiển thị Menu Edit / Delete chung cho tất cả các màn hình
+  /// Hiển thị Menu 
   static void showOptions(BuildContext context, WidgetRef ref, TransactionEntity tx) {
     showModalBottomSheet(
       context: context,
@@ -59,7 +59,7 @@ class TransactionActions {
     final amountController = TextEditingController(text: tx.amount.toString());
     final noteController = TextEditingController(text: tx.note ?? '');
 
-    // 1. Kéo danh sách ví hiện tại từ Provider (đã được cache ở Home)
+    // 1. Kéo danh sách ví hiện tại từ Provider 
     final wallets = ref.read(walletsStreamProvider).value ?? [];
     String? selectedWalletId = tx.walletId;
 
