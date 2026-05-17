@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // Từ nhánh Thu: Thêm để fetch ví
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import '../providers/language_provider.dart'; // Từ nhánh Bạn
-import '../utils/app_translations.dart'; // Từ nhánh Bạn
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
-// Model đơn giản để hứng dữ liệu ví
 class Wallet {
   final String id;
   final String name;
@@ -24,8 +23,8 @@ class AddTransactionScreen extends ConsumerStatefulWidget {
 class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   bool _isExpense = true;
   String _selectedCategory = 'Food';
-  String? _selectedWalletId; // Biến lưu Ví được chọn
-  List<Wallet> _wallets = []; // Danh sách ví từ Database
+  String? _selectedWalletId;
+  List<Wallet> _wallets = [];
   bool _isLoadingWallets = true;
 
   final TextEditingController _amountController = TextEditingController();
@@ -35,10 +34,9 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchWallets(); // Lấy danh sách ví khi mở màn hình
+    _fetchWallets();
   }
 
-  // Hàm lấy danh sách ví từ Supabase (Của Thu)
   Future<void> _fetchWallets() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
@@ -114,13 +112,13 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lang = ref.watch(languageProvider); // Ngôn ngữ từ nhánh Bạn
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          AppTranslations.getText(lang, 'new_transaction'), // Đa ngôn ngữ
+          AppTranslations.getText(lang, 'new_transaction'),
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
@@ -141,7 +139,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTypeToggle(lang), // Truyền ngôn ngữ vào Toggle
+                    _buildTypeToggle(lang),
                     const SizedBox(height: 32),
 
                     Center(
@@ -165,7 +163,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                 color: Theme.of(context).colorScheme.onSurface
                               ),
                               decoration: InputDecoration(
-                                // LOGIC TIỀN TỆ TỪ NHÁNH CỦA BẠN
                                 prefixText: lang == 'en' ? '\$ ' : null,
                                 prefixStyle: TextStyle(
                                   fontSize: 48,
@@ -191,9 +188,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // WALLET SELECTION (CỦA THU)
                     Text(
-                      AppTranslations.getText(lang, 'wallet'), // Đa ngôn ngữ cho chữ Wallet
+                      AppTranslations.getText(lang, 'wallet'),
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
                     ),
                     const SizedBox(height: 12),
@@ -241,7 +237,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                           final category = _currentCategories[index];
                           final isSelected = _selectedCategory == category['name'];
                           return _buildCategoryItem(
-                            lang, // Truyền ngôn ngữ vào
+                            lang,
                             category['name'],
                             category['icon'],
                             category['color'],
@@ -260,7 +256,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildActionTile( // Helper của Thu
+                    _buildActionTile(
                       icon: Icons.calendar_today_rounded,
                       text: "${_selectedDate.day.toString().padLeft(2, '0')} / ${_selectedDate.month.toString().padLeft(2, '0')} / ${_selectedDate.year}",
                       onTap: _presentDatePicker,
@@ -300,7 +296,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => _saveTransaction(lang), // Gọi hàm save kèm ngôn ngữ
+                  onPressed: () => _saveTransaction(lang),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -319,13 +315,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     );
   }
 
-  // HÀM SAVE GỘP LOGIC CỦA BẠN VÀ THU
   Future<void> _saveTransaction(String lang) async {
     if (_amountController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppTranslations.getText(lang, 'please_enter_amount'))));
       return;
     }
-    // Check ví của Thu
+
     if (_selectedWalletId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a wallet')));
       return;
@@ -334,7 +329,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final amountInputRaw = double.tryParse(_amountController.text) ?? 0.0;
     if (amountInputRaw <= 0) return;
 
-    // QUY ĐỔI TIỀN TỆ CỦA BẠN
     double amountInUsd = amountInputRaw;
     if (lang == 'vi') {
       amountInUsd = amountInputRaw / 25000;
@@ -344,7 +338,6 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final color = selectedCat['color'] as Color;
     final icon = selectedCat['icon'] as IconData;
 
-    // Đẩy đủ bộ tham số vào backend
     await ref.read(addTransactionUseCaseProvider).execute(
       amount: amountInUsd,
       isExpense: _isExpense,

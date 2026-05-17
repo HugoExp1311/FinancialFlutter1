@@ -16,19 +16,18 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageProvider); // Ngôn ngữ từ nhánh bạn
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        // Giữ cấu trúc Slivers cuộn mượt của Thu
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               sliver: SliverToBoxAdapter(
-                child: _buildAppBar(context, ref, lang), // Truyền ngôn ngữ vào AppBar
+                child: _buildAppBar(context, ref, lang),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -43,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      AppTranslations.getText(lang, 'recent_transactions'), // Đa ngôn ngữ
+                      AppTranslations.getText(lang, 'recent_transactions'),
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5),
                     ),
                     TextButton(
@@ -53,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                       ),
                       child: Text(
-                        AppTranslations.getText(lang, 'see_all'), // Đa ngôn ngữ
+                        AppTranslations.getText(lang, 'see_all'),
                         style: const TextStyle(fontWeight: FontWeight.bold)
                       ),
                     ),
@@ -61,7 +60,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            _buildTransactionList(ref, lang), // Truyền ngôn ngữ vào List
+            _buildTransactionList(ref, lang),
           ],
         ),
       ),
@@ -77,7 +76,7 @@ class HomeScreen extends ConsumerWidget {
           return SliverFillRemaining(
             child: Center(
               child: Text(
-                AppTranslations.getText(lang, 'no_transactions_yet'), // Đa ngôn ngữ
+                AppTranslations.getText(lang, 'no_transactions_yet'),
                 style: const TextStyle(color: Colors.grey)
               ),
             ),
@@ -90,7 +89,6 @@ class HomeScreen extends ConsumerWidget {
               (context, index) {
                 final tx = transactions[index];
                 
-                // LOGIC ĐA NGÔN NGỮ VÀ TIỀN TỆ CỦA BẠN
                 final displayCategoryName = AppTranslations.getText(
                   lang,
                   tx.categoryName.toLowerCase(),
@@ -107,7 +105,7 @@ class HomeScreen extends ConsumerWidget {
                     child: TransactionItem(
                       title: displayCategoryName,
                       date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                      amountText: '$sign$formattedAmt', // Dùng chuỗi tiền tệ đã format
+                      amountText: '$sign$formattedAmt',
                       isExpense: tx.isExpense,
                       icon: CategoryUtils.getIcon(tx.categoryName),
                       iconColor: CategoryUtils.getColor(tx.categoryName),
@@ -128,7 +126,6 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildAppBar(BuildContext context, WidgetRef ref, String lang) {
-    // Logic kéo Avatar và Tên từ Supabase của Thu
     final profileAsync = ref.watch(profileProvider);
     final user = Supabase.instance.client.auth.currentUser;
 
@@ -164,7 +161,7 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppTranslations.getText(lang, 'welcome'), // Chữ "Chào mừng trở lại" đa ngôn ngữ
+                AppTranslations.getText(lang, 'welcome'),
                 style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)
               ),
               Text(

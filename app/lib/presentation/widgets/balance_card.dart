@@ -12,8 +12,8 @@ class BalanceCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final txAsyncValue = ref.watch(transactionsStreamProvider);
-    final lang = ref.watch(languageProvider); // Ngôn ngữ (Từ nhánh bạn)
-    final isHideBalance = ref.watch(hideBalanceProvider); // Tính năng ẩn số dư (Từ nhánh Thu)
+    final lang = ref.watch(languageProvider);
+    final isHideBalance = ref.watch(hideBalanceProvider);
 
     double income = 0;
     double expense = 0;
@@ -32,7 +32,7 @@ class BalanceCard extends ConsumerWidget {
 
     double total = income - expense;
     
-    // HỢP NHẤT LOGIC: Nếu đang ẩn thì hiện '••••••', nếu không thì dùng FormatUtils của bạn
+    // Nếu đang ẩn số tiền thì hiện '••••••'
     final String displayTotal = isHideBalance ? '••••••' : FormatUtils.formatCurrency(total, lang);
     final String displayIncome = isHideBalance ? '••••••' : FormatUtils.formatCurrency(income, lang);
     final String displayExpense = isHideBalance ? '••••••' : FormatUtils.formatCurrency(expense, lang);
@@ -41,12 +41,12 @@ class BalanceCard extends ConsumerWidget {
       width: double.infinity,
       height: 220,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32), // UI bo góc xịn của Thu
+        borderRadius: BorderRadius.circular(32),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF1E1E2E), // Midnight
-            Color(0xFF4338CA), // Royal Indigo
-            Color(0xFF6366F1), // Modern Violet
+            Color(0xFF1E1E2E),
+            Color(0xFF4338CA),
+            Color(0xFF6366F1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -61,7 +61,6 @@ class BalanceCard extends ConsumerWidget {
       ),
       child: Stack(
         children: [
-          // Các vòng tròn trang trí background của Thu
           Positioned(
             top: -50,
             right: -50,
@@ -86,7 +85,6 @@ class BalanceCard extends ConsumerWidget {
               ),
             ),
           ),
-          // Nội dung chính
           Padding(
             padding: const EdgeInsets.all(28),
             child: Column(
@@ -100,7 +98,7 @@ class BalanceCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          AppTranslations.getText(lang, 'total_balance'), // Áp dụng Đa ngôn ngữ
+                          AppTranslations.getText(lang, 'total_balance'),
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: 14,
@@ -120,7 +118,6 @@ class BalanceCard extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    // Biểu tượng thẻ hoặc logo app mini
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -144,16 +141,16 @@ class BalanceCard extends ConsumerWidget {
                       _buildInfoItem(
                         context,
                         icon: Icons.arrow_downward_rounded,
-                        color: const Color(0xFF34D399), // Emerald Green
-                        title: AppTranslations.getText(lang, 'income'), // Áp dụng Đa ngôn ngữ
+                        color: const Color(0xFF34D399),
+                        title: AppTranslations.getText(lang, 'income'),
                         amount: displayIncome,
                       ),
                       Container(width: 1, height: 30, color: Colors.white12),
                       _buildInfoItem(
                         context,
                         icon: Icons.arrow_upward_rounded,
-                        color: const Color(0xFFF87171), // Soft Red
-                        title: AppTranslations.getText(lang, 'expense'), // Áp dụng Đa ngôn ngữ
+                        color: const Color(0xFFF87171),
+                        title: AppTranslations.getText(lang, 'expense'),
                         amount: displayExpense,
                       ),
                     ],

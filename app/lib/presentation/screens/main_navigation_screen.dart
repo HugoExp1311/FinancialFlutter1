@@ -126,7 +126,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
                   1,
                   AppTranslations.getText(lang, 'statistics'),
                 ),
-                const SizedBox(width: 48), // Khoảng trống cho FAB
+                const SizedBox(width: 48),
                 _buildNavItem(
                   Icons.account_balance_wallet_rounded,
                   2,

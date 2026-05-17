@@ -104,4 +104,4 @@ dart bin/server.dart
 3. Nhập văn bản: *"Hôm nay tớ tiêu 45 ngàn tiền ăn một tô phở cạn tiền luôn"* -> Tiều phu AI sẽ ghi nhận Data Kế toán.
 4. Nhập tiếp: *"Phân tích cho tớ và chốt xem tiền dư tháng này bù lỗ được không?"* -> Giáo sư AI sẽ in ra biểu đồ Markdown và đánh giá tài chính cho bạn!
 
-Chúc bạn thành công với AI Finance Chatbot siêu cấp vũ trụ này! 🏆
+Chúc bạn thành công với AI Finance Chatbot này!

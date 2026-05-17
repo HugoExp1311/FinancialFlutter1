@@ -20,7 +20,6 @@ class AppTransaction {
 
   String? note;
 
-  // --- THÊM TRƯỜNG WALLET ID TẠI ĐÂY ---
   @Index()
   String? walletId; 
 
@@ -44,7 +43,7 @@ class AppTransaction {
       isExpense: isExpense,
       date: date,
       note: note,
-      walletId: walletId, // CHUYỂN SANG ENTITY
+      walletId: walletId,
       categoryName: categoryName,
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
@@ -62,7 +61,7 @@ class AppTransaction {
     isExpense = entity.isExpense;
     date = entity.date;
     note = entity.note;
-    walletId = entity.walletId; // ÁP DỤNG TỪ ENTITY
+    walletId = entity.walletId;
     categoryName = entity.categoryName;
     categoryIconCode = entity.categoryIconCode;
     categoryColorHex = entity.categoryColorHex;

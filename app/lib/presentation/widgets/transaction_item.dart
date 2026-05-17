@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 class TransactionItem extends StatelessWidget {
   final String title;
   final String date;
-  final String amountText; // Logic tiền tệ của bạn
+  final String amountText;
   final bool isExpense;
   final IconData icon;
   final Color iconColor;
@@ -43,7 +43,6 @@ class TransactionItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          // Giữ hiệu ứng sóng nước tinh tế của Thu
           splashColor: iconColor.withValues(alpha: 0.15), 
           highlightColor: iconColor.withValues(alpha: 0.05),
           onTap: onTap,
@@ -88,7 +87,7 @@ class TransactionItem extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Amount Format (Sử dụng chuỗi đã format từ nhánh của bạn)
+                // Amount Format
                 Text(
                   amountText,
                   style: TextStyle(

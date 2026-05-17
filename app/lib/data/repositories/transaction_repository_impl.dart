@@ -58,11 +58,10 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
   @override
   Future<void> addTransaction(TransactionEntity entity) async {
-    // Tự sinh UUID nếu giao dịch chưa có ID (phòng hờ)
+    // Tự sinh UUID nếu giao dịch chưa có ID
     final String newId = (entity.syncId.isEmpty) ? _uuid.v4() : entity.syncId;
     final tx = AppTransaction.fromEntity(entity.copyWith(syncId: newId));
 
-    // Lưu vào Isar trước cho mượt UI
     await _isar.writeTxn(() async {
       await _isar.appTransactions.put(tx);
     });
@@ -81,7 +80,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
     final tx = existing ?? AppTransaction();
     tx.applyFromEntity(entity);
-    tx.updatedAt = DateTime.now().toUtc(); // Cập nhật thời gian sửa
+    tx.updatedAt = DateTime.now().toUtc();
     tx.isSynced = false;
 
     await _isar.writeTxn(() async {
@@ -100,7 +99,6 @@ class TransactionRepositoryImpl implements ITransactionRepository {
     
     if (tx == null) return;
 
-    // Đánh dấu xóa thay vì xóa hẳn (Soft Delete)
     tx.isDeleted = true;
     tx.updatedAt = DateTime.now().toUtc();
     tx.isSynced = false;
@@ -118,7 +116,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
   @override
   Future<void> syncAll() async {
-    // 1. PUSH: Đẩy data local chưa sync lên cloud
+    // PUSH: Đẩy data local chưa sync lên cloud
     final offlineTxs = await _isar.appTransactions
         .filter()
         .isSyncedEqualTo(false)
@@ -128,7 +126,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
       await _pushToSupabase(tx); 
     }
 
-    // 2. PULL WALLETS: Lấy ví và số dư từ Cloud về
+    // PULL WALLETS: Lấy ví và số dư từ Cloud về
     try {
       final walletResponse = await _supabase.from('wallets').select().eq('user_id', _supabase.auth.currentUser?.id ?? '');
       final List<AppWallet> pulledWallets = [];
@@ -150,7 +148,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
       debugPrint('🔴 Lỗi Pull Wallets: $e'); 
     }
 
-    // 3. PULL TRANSACTIONS: Lấy data mới từ cloud về
+    // PULL TRANSACTIONS: Lấy data mới từ cloud về
     try {
       final response = await _supabase.from('transactions').select();
       final List<AppTransaction> pulledTxs = [];
@@ -210,7 +208,6 @@ class TransactionRepositoryImpl implements ITransactionRepository {
       
       debugPrint('🟢 Push Supabase thành công sync_id: ${tx.syncId} (Wallet: ${tx.walletId})');
     } catch (e) {
-      // Nếu mất mạng thì rớt vào đây, kệ nó để lần sau syncAll xử lý
       debugPrint('🔴 Lỗi Push Supabase (Có thể do mất mạng): $e');
     }
   }

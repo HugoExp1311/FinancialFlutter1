@@ -17,7 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isSignUp = false; // Chuyển đổi trạng thái Đăng Nhập / Đăng Ký
+  bool _isSignUp = false; // chuyển đổi trạng thái đăng nhập / đăng Ký
 
   Future<void> _handleAuth() async {
     setState(() => _isLoading = true);

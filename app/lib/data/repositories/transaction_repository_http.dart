@@ -12,10 +12,8 @@ class TransactionRepositoryHttp implements ITransactionRepository {
     throw UnimplementedError('HTTP stream not implemented yet');
   }
 
-  // MỚI: Thêm hàm theo dõi Ví (Từ nhánh Thu)
   @override
   Stream<List<WalletEntity>> watchWallets() {
-    // Tạm thời để trống cho bản Microservices
     return const Stream.empty();
   }
 

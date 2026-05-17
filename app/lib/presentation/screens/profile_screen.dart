@@ -236,7 +236,7 @@ class ProfileScreen extends ConsumerWidget {
                     value: isHideBalanceEnabled,
                     onChanged: (v) {
                       setState(() => isHideBalanceEnabled = v);
-                      ref.read(hideBalanceProvider.notifier).state = v; // Cập nhật State toàn cục
+                      ref.read(hideBalanceProvider.notifier).state = v;
                     },
                   ),
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
@@ -244,56 +244,6 @@ class ProfileScreen extends ConsumerWidget {
               ),
             );
           },
-        );
-      },
-    );
-  }
-
-  // --- LOGIC: CHỌN TIỀN TỆ ---
-  void _showCurrencySettings(BuildContext context, WidgetRef ref) {
-    final currencies = [
-      {'label': 'US Dollar (USD)', 'symbol': '\$'},
-      {'label': 'Vietnamese Dong (VND)', 'symbol': '₫'},
-      {'label': 'Euro (EUR)', 'symbol': '€'},
-      {'label': 'Japanese Yen (JPY)', 'symbol': '¥'},
-    ];
-    String currentSymbol = ref.read(currencyProvider);
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-              const SizedBox(height: 16),
-              const Text('Currency', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              ...currencies.map((currency) {
-                final isSelected = currentSymbol == currency['symbol'];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade200, shape: BoxShape.circle),
-                    child: Center(child: Text(currency['symbol']!, style: TextStyle(fontSize: 18, color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.bold))),
-                  ),
-                  title: Text(currency['label']!, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                  trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryColor) : null,
-                  onTap: () {
-                    ref.read(currencyProvider.notifier).state = currency['symbol']!;
-                    Navigator.pop(context);
-                  },
-                );
-              }),
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-            ],
-          ),
         );
       },
     );
@@ -412,8 +362,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(profileProvider);
     final user = Supabase.instance.client.auth.currentUser;
-    final currentCurrency = ref.watch(currencyProvider);
-    final lang = ref.watch(languageProvider); // Ngôn ngữ từ nhánh bạn
+    final lang = ref.watch(languageProvider);
 
     return profileAsync.when(
       data: (profile) {
@@ -457,11 +406,11 @@ class ProfileScreen extends ConsumerWidget {
 
                 _buildSettingItem(context, Icons.person_outline_rounded, AppTranslations.getText(lang, 'account_settings'), onTap: () => _showAccountSettings(context, ref, profile)),
                 
-                // MỤC CHỌN NGÔN NGỮ (CỦA BẠN - GẮN VÀO UI CỦA THU)
+                // MỤC CHỌN NGÔN NGỮ (Tự động quy định tiền tệ)
                 _buildSettingItem(
                   context, 
                   Icons.language_rounded, 
-                  AppTranslations.getText(lang, 'language'), 
+                  AppTranslations.getText(lang, 'language'),
                   trailing: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: lang,
@@ -490,7 +439,6 @@ class ProfileScreen extends ConsumerWidget {
                 ),
 
                 _buildSettingItem(context, Icons.security_rounded, AppTranslations.getText(lang, 'security_faceid'), onTap: () => _showSecuritySettings(context, ref)),
-                _buildSettingItem(context, Icons.payments_outlined, 'Currency', subtitle: currentCurrency, onTap: () => _showCurrencySettings(context, ref)),
                 _buildSettingItem(context, Icons.notifications_none_rounded, AppTranslations.getText(lang, 'notifications'), onTap: () => _showNotificationsSettings(context)),
                 _buildSettingItem(context, Icons.help_outline_rounded, AppTranslations.getText(lang, 'help_support'), onTap: () => _showHelpAndSupport(context)),
                 const SizedBox(height: 32),
@@ -510,7 +458,6 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  // --- LOGIC 4: CẬP NHẬT HIỆU ỨNG NÚT BẤM CỦA THU (CÓ THÊM THAM SỐ TRAILING CỦA BẠN) ---
   Widget _buildSettingItem(BuildContext context, IconData icon, String title, {String? subtitle, bool isDanger = false, VoidCallback? onTap, Widget? trailing}) {
     final color = isDanger ? Colors.redAccent : Theme.of(context).colorScheme.onSurface;
 
@@ -534,7 +481,7 @@ class ProfileScreen extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           highlightColor: AppTheme.primaryColor.withValues(alpha: 0.05),
           splashColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-          onTap: trailing != null ? null : (onTap ?? () {}), // Tắt hiệu ứng bấm nếu có trailing (Dropdown)
+          onTap: trailing != null ? null : (onTap ?? () {}),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
@@ -557,7 +504,6 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // Xử lý mũi tên điều hướng hoặc Trailing Widget
                 if (trailing != null)
                   trailing
                 else if (!isDanger)

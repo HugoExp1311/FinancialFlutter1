@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:image_picker/image_picker.dart'; // Chụp ảnh từ nhánh bạn
-import 'package:flutter_markdown/flutter_markdown.dart'; // Markdown từ nhánh Thu
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
 
@@ -29,7 +29,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   List<ChatMessage> build() {
     return [
       ChatMessage(
-        text: introKey, // Lưu dưới dạng key để dịch tin nhắn đa ngôn ngữ
+        text: introKey,
         isUser: false,
       ),
     ];
@@ -65,7 +65,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _base64Image;
 
-  // Tính năng chụp ảnh hóa đơn từ nhánh Bạn
+  // chụp ảnh hóa đơn
   Future<void> _pickImage() async {
     final lang = ref.read(languageProvider);
     try {
@@ -161,7 +161,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           _isLoading = false;
         });
 
-        // Bóc tách JSON an toàn (Kết hợp cả 2 nhánh)
         String resultText = responseBody.trim();
 
         try {
@@ -175,7 +174,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
             }
           }
         } catch (e) {
-          // Nếu không phải JSON thì bắt lỗi incompatible
           if (resultText.isEmpty) {
             resultText = '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody';
           }
@@ -312,7 +310,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.8, // Giới hạn chiều rộng
+              maxWidth: MediaQuery.of(context).size.width * 0.8,
             ),
             decoration: BoxDecoration(
               color: bgColor,
@@ -323,7 +321,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
                       color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                     ),
             ),
-            // SỬ DỤNG MARKDOWN CỦA THU NẾU LÀ BOT TRẢ LỜI
+
             child: isUser 
               ? Text(displayText, style: TextStyle(color: textColor, fontSize: 16))
               : MarkdownBody(
@@ -342,7 +340,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   }
 
   Widget _buildTextComposer(String lang) {
-    // Danh sách các gợi ý nhanh (Của Thu)
+    // Danh sách các gợi ý nhanh
     final List<String> quickReplies = [
       "🎯 Tư vấn tài chính",
       "📊 Thống kê tháng này",
@@ -365,7 +363,6 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // HÀNG NÚT BẤM GỢI Ý NHANH (CỦA THU)
             SizedBox(
               height: 45,
               child: ListView(
@@ -385,7 +382,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Ô NHẬP LIỆU & NÚT GỬI ẢNH (CỦA BẠN)
+            // ô nhập và nút gửi ảnh
             Row(
               children: [
                 IconButton(

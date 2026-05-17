@@ -5,9 +5,9 @@ import 'package:core_domain/core_domain.dart';
 import 'package:isar_community/isar.dart'; 
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import '../providers/language_provider.dart'; // Đa ngôn ngữ từ nhánh bạn
-import '../utils/app_translations.dart'; // Đa ngôn ngữ từ nhánh bạn
-import '../utils/format_utils.dart'; // Format tiền tệ từ nhánh bạn
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
+import '../utils/format_utils.dart';
 import '../../data/models/app_wallet.dart';
 import '../../data/models/app_transaction.dart';
 
@@ -27,13 +27,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     });
   }
 
-  // =========================================================================
-  // 1. THÊM / SỬA VÍ (CỦA THU)
-  // =========================================================================
+  // THÊM / SỬA VÍ 
   void _showWalletModal(BuildContext context, String lang, {WalletEntity? existingWallet}) {
     final isEditing = existingWallet != null;
     final nameController = TextEditingController(text: isEditing ? existingWallet.name : '');
-    // Tiền tệ: Ở mode edit, Thu hiện số dư thô, ta giữ nguyên để user dễ nhìn số
     final balanceController = TextEditingController(text: isEditing ? existingWallet.balance.toString() : '');
 
     showModalBottomSheet(
@@ -53,7 +50,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))),
             const SizedBox(height: 24),
             
-            // Icon
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), shape: BoxShape.circle),
@@ -65,7 +61,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             Text(isEditing ? 'Modify your wallet details' : 'Add a new source of funds', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
             const SizedBox(height: 32),
             
-            // Input Tên Ví
             TextField(
               controller: nameController,
               decoration: InputDecoration(
@@ -135,7 +130,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                         await isar.writeTxn(() async => await isar.appWallets.put(appWalletToUpdate));
                       }
                     } else {
-                      // QUY ĐỔI TIỀN TỆ TRƯỚC KHI LƯU VÍ MỚI (Logic của bạn)
                       double balanceInUsd = amount;
                       if (lang == 'vi') {
                         balanceInUsd = amount / 25000;
@@ -173,9 +167,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 
-  // =========================================================================
-  // 2. CẢNH BÁO XÓA & XÓA CÙNG GIAO DỊCH (CASCADE SOFT DELETE)
-  // =========================================================================
+  // CẢNH BÁO XÓA VÀ XÓA CÙNG GIAO DỊCH
   void _showWalletOptions(BuildContext context, WalletEntity wallet, bool isMainWallet, String lang) {
     showModalBottomSheet(
       context: context,
@@ -203,9 +195,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   subtitle: isMainWallet ? const Text('Ví chính không thể xoá') : null,
                   enabled: !isMainWallet, 
                   onTap: () async {
-                    Navigator.pop(context); // Đóng menu Option
+                    Navigator.pop(context);
                     
-                    // --- HIỂN THỊ POPUP CẢNH BÁO ---
+                    // POPUP CẢNH BÁO
                     bool confirmDelete = await showDialog(
                       context: context,
                       builder: (ctx) => AlertDialog(
@@ -223,20 +215,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                       ),
                     ) ?? false;
 
-                    if (!confirmDelete) return; // Nếu user bấm Cancel thì dừng
+                    if (!confirmDelete) return;
 
-                    // --- TIẾN HÀNH XOÁ ---
                     try {
-                      // 1. Soft Delete toàn bộ Transactions thuộc ví này trên Supabase
                       await Supabase.instance.client.from('transactions').update({
                         'is_deleted': true,
                         'updated_at': DateTime.now().toUtc().toIso8601String(),
                       }).eq('wallet_id', wallet.id);
 
-                      // 2. Hard Delete Ví trên Supabase
                       await Supabase.instance.client.from('wallets').delete().eq('id', wallet.id);
                       
-                      // 3. Cập nhật xoá trên Isar Local
                       final isar = ref.read(isarProvider);
                       await isar.writeTxn(() async {
                         // Cập nhật giao dịch thành isDeleted = true ở local
@@ -247,7 +235,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                           await isar.appTransactions.put(t);
                         }
                         
-                        // Xoá ví ở local
                         final appWalletToDelete = await isar.appWallets.filter().syncIdEqualTo(wallet.id).findFirst();
                         if (appWalletToDelete != null) {
                           await isar.appWallets.delete(appWalletToDelete.id); 
@@ -268,12 +255,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 
-  // =========================================================================
-  // 3. UI
-  // =========================================================================
+  // UI
   @override
   Widget build(BuildContext context) {
-    final lang = ref.watch(languageProvider); // Ngôn ngữ từ nhánh bạn
+    final lang = ref.watch(languageProvider);
     final walletsAsync = ref.watch(walletsStreamProvider);
     final allTransactions = ref.watch(transactionsStreamProvider).value ?? [];
 
@@ -312,14 +297,12 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                         }
                         final currentBalance = wallet.balance + txSum; 
                         
-                        // FORMAT TIỀN TỆ CỦA BẠN VÀO ĐÂY
                         final formattedBalance = FormatUtils.formatCurrency(currentBalance, lang);
                         final String sign = currentBalance < 0 ? '-' : '';
 
                         final Color color1 = isMainWallet ? const Color(0xFF0F2027) : const Color(0xFF4CA1AF);
                         final Color color2 = isMainWallet ? const Color(0xFF1F4C74) : const Color(0xFF2C3E50);
                         
-                        // Dịch chữ "Ví Chính"
                         final displayName = isMainWallet 
                             ? AppTranslations.getText(lang, 'main_wallet') 
                             : wallet.name;
@@ -332,7 +315,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                             color1: color1, color2: color2,
                             name: displayName,
                             number: '**** **** **** ${walletId.length > 4 ? walletId.substring(0, 4) : walletId}',
-                            balance: '$sign$formattedBalance', // Hiển thị chuẩn theo Locale
+                            balance: '$sign$formattedBalance',
                             onTap: () => _showWalletOptions(context, wallet, isMainWallet, lang),
                           ),
                         );

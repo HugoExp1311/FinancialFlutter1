@@ -20,7 +20,7 @@ Future<void> main() async {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(430, 932), // Kích thước iPhone 14 Pro Max
+      size: Size(430, 932),
       minimumSize: Size(380, 800),
       center: true,
       backgroundColor: Colors.transparent,

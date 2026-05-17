@@ -13,7 +13,7 @@ class TransactionActions {
     WidgetRef ref,
     TransactionEntity tx,
   ) {
-    final lang = ref.read(languageProvider); // Lấy ngôn ngữ từ nhánh bạn
+    final lang = ref.read(languageProvider);
 
     showModalBottomSheet(
       context: context,
@@ -27,7 +27,6 @@ class TransactionActions {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Thanh kéo trang trí của Thu
                 Center(
                   child: Container(
                     width: 40,
@@ -49,7 +48,7 @@ class TransactionActions {
                     child: const Icon(Icons.edit_rounded, color: AppTheme.primaryColor),
                   ),
                   title: Text(
-                    AppTranslations.getText(lang, 'edit_transaction'), // Đa ngôn ngữ
+                    AppTranslations.getText(lang, 'edit_transaction'),
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   onTap: () {
@@ -67,7 +66,7 @@ class TransactionActions {
                     child: const Icon(Icons.delete_rounded, color: AppTheme.expenseColor),
                   ),
                   title: Text(
-                    AppTranslations.getText(lang, 'delete_transaction'), // Đa ngôn ngữ
+                    AppTranslations.getText(lang, 'delete_transaction'),
                     style: const TextStyle(color: AppTheme.expenseColor, fontWeight: FontWeight.w500),
                   ),
                   onTap: () async {
@@ -80,7 +79,7 @@ class TransactionActions {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              AppTranslations.getText(lang, 'transaction_deleted'), // Đa ngôn ngữ
+                              AppTranslations.getText(lang, 'transaction_deleted'),
                             ),
                           ),
                         );
@@ -90,7 +89,7 @@ class TransactionActions {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              '${AppTranslations.getText(lang, 'failed_to_delete')}: $e', // Đa ngôn ngữ
+                              '${AppTranslations.getText(lang, 'failed_to_delete')}: $e',
                             ),
                           ),
                         );
@@ -112,9 +111,9 @@ class TransactionActions {
     WidgetRef ref,
     TransactionEntity tx,
   ) {
-    final lang = ref.read(languageProvider); // Ngôn ngữ
+    final lang = ref.read(languageProvider);
 
-    // LOGIC TIỀN TỆ CỦA BẠN: Quy đổi USD -> VND nếu đang dùng tiếng Việt
+    // Quy đổi USD -> VND nếu đang dùng tiếng Việt
     double displayAmount = tx.amount;
     if (lang == 'vi') {
       displayAmount = tx.amount * 25000;
@@ -125,7 +124,6 @@ class TransactionActions {
     );
     final noteController = TextEditingController(text: tx.note ?? '');
 
-    // 1. Kéo danh sách ví hiện tại từ Provider (Của Thu)
     final wallets = ref.read(walletsStreamProvider).value ?? [];
     String? selectedWalletId = tx.walletId;
 
@@ -155,7 +153,6 @@ class TransactionActions {
       selectedCategory = currentCategories.first['name'];
     }
 
-    // 2. Định dạng UI chuẩn của Thu
     InputDecoration customInputDecoration(String label, IconData icon) {
       return InputDecoration(
         labelText: label,
@@ -176,7 +173,7 @@ class TransactionActions {
           builder: (context, setState) {
             return AlertDialog(
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), // UI bo góc xịn xò
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               titlePadding: const EdgeInsets.only(top: 24, left: 24, right: 24, bottom: 16),
               contentPadding: const EdgeInsets.symmetric(horizontal: 24),
               title: Text(
@@ -184,7 +181,6 @@ class TransactionActions {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22)
               ),
               
-              // Bọc ScrollView để chống lỗi bàn phím che khuất màn hình (Của Thu)
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -196,21 +192,20 @@ class TransactionActions {
                         AppTranslations.getText(lang, 'amount'), 
                         Icons.attach_money_rounded
                       ).copyWith(
-                        // Gắn thêm tiền tố/hậu tố tiền tệ của bạn vào UI của Thu
-                        prefixIcon: null, // Bỏ icon mặc định để thay bằng chữ
+                        prefixIcon: null,
                         prefixText: lang == 'en' ? '\$ ' : null,
                         suffixText: lang == 'vi' ? ' đ' : null,
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // --- CHỌN VÍ (Của Thu) ---
+                    // Chọn ví
                     if (wallets.isNotEmpty)
                       DropdownButtonFormField<String>(
                         isExpanded: true,
                         value: selectedWalletId,
                         decoration: customInputDecoration(
-                          AppTranslations.getText(lang, 'wallet'), // Đa ngôn ngữ
+                          AppTranslations.getText(lang, 'wallet'),
                           Icons.account_balance_wallet_outlined
                         ).copyWith(prefixIcon: null),
                         dropdownColor: Theme.of(context).cardTheme.color ?? Colors.white,
@@ -248,7 +243,6 @@ class TransactionActions {
                             children: [
                               Icon(c['icon'] as IconData, color: c['color'] as Color, size: 20),
                               const SizedBox(width: 12),
-                              // Dịch tên danh mục
                               Text(AppTranslations.getText(lang, (c['name'] as String).toLowerCase())),
                             ],
                           ),
@@ -291,7 +285,7 @@ class TransactionActions {
                     final rawAmount = double.tryParse(amountController.text);
                     if (rawAmount == null) return;
 
-                    // LOGIC CỦA BẠN: Quy đổi tiền Việt sang Đô trước khi lưu
+                    // Quy đổi tiền Việt sang Đô trước khi lưu
                     double amountInUsd = rawAmount;
                     if (lang == 'vi') {
                       amountInUsd = rawAmount / 25000;
@@ -301,7 +295,6 @@ class TransactionActions {
                     final color = selectedCatConfig['color'] as Color;
                     final icon = selectedCatConfig['icon'] as IconData;
 
-                    // THÊM WALLET ID (Của Thu) + DỮ LIỆU ĐÃ QUY ĐỔI (Của Bạn)
                     final updatedTx = tx.copyWith(
                       amount: amountInUsd,
                       note: noteController.text,
