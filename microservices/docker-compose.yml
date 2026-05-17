@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # CỔNG CHÍNH ĐỨNG MŨI CHỊU SÀO (API GATEWAY)
+  api_gateway:
+    image: nginx:alpine
+    container_name: mcr_api_gateway
+    volumes:
+      - ./api_gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "3000:80"     # App Flutter và dân mạng chỉ thấy duy nhất cổng 3000 này
+    depends_on:
+      - transaction_service
+    networks:
+      - finance_network
+
+  # DỊCH VỤ NỘI BỘ (TRANSACTION MICROSERVICE)
+  transaction_service:
+    build:
+      context: ../                  # Context chỉ ra thư mục gốc (Root) để gom cả packages/core_domain
+      dockerfile: microservices/transaction_service/Dockerfile
+    container_name: mcr_transaction_service
+    # XÓA port publish ("8080:8080") -> Che giấu hoàn toàn service này khỏi User bên ngoài
+    # Nó chỉ mở cửa hông cho api_gateway (ai chung finance_network) mới thấy port 8080
+    expose:
+      - "8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+    env_file:
+      - ../app/.env                 # Tự động lấy cấu hình Supabase từ môn 1
+    restart: unless-stopped
+    networks:
+      - finance_network
+
+  # DỊCH VỤ CHATBOT AI
+  chatbot_service:
+    build:
+      context: chatbot_service
+    container_name: mcr_chatbot_service
+    expose:
+      - "3002"
+    environment:
+      - PORT=3002
+      - HOST=0.0.0.0
+      # Để dùng domain thật, bỏ comment dòng dưới và điền link webhook của bạn
+      # - N8N_WEBHOOK_URL=https://n8n.vault.io.vn/webhook/ai-chat
+    env_file:
+      - ../app/.env
+    restart: unless-stopped
+    networks:
+      - finance_network
+
+networks:
+  finance_network:
+    driver: bridge
+
+# NOTE: For production deployment, use docker-compose.prod.yml instead
+# Production file includes:
+# - Unique port (8765) for Cloudflare Tunnel
+# - Health checks for all services
+# - Production-grade nginx configuration
+# - Proper logging and restart policies
