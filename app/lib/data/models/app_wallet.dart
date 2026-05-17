@@ -13,7 +13,7 @@ class AppWallet {
 
   late String name;
   
-  // Trường lưu số dư thực tế từ Supabase[cite: 5, 6]
+  // Trường lưu số dư thực tế từ Supabase
   late double balance;
 
   String? colorHex;
@@ -23,6 +23,9 @@ class AppWallet {
   late String userId;
 
   late DateTime updatedAt;
+
+  bool isDefault = false;
+  DateTime? createdAt;
 
   @Index()
   bool isSynced = false;
@@ -39,21 +42,25 @@ class AppWallet {
       balance: balance,
       colorHex: colorHex ?? '#2196F3',
       cardNumber: cardNumber,
+      isDefault: isDefault,
+      createdAt: createdAt,
     );
   }
 
-  /// Cập nhật dữ liệu từ Entity vào Isar[cite: 5, 6]
+  /// Cập nhật dữ liệu từ Entity vào Isar
   void applyFromEntity(WalletEntity entity) {
     syncId = entity.id;
     name = entity.name;
     balance = entity.balance;
     colorHex = entity.colorHex;
     cardNumber = entity.cardNumber;
+    isDefault = entity.isDefault;
+    createdAt = entity.createdAt;
     updatedAt = DateTime.now();
-    isSynced = true; // Đánh dấu đã đồng bộ vì lấy từ Entity chính thống[cite: 5]
+    isSynced = true; // Đánh dấu đã đồng bộ vì lấy từ Entity
   }
 
-  /// Hàm tiện ích tạo nhanh model từ Entity[cite: 5]
+  /// Hàm tiện ích tạo nhanh model từ Entity
   static AppWallet fromEntity(WalletEntity entity, String userId) {
     final wallet = AppWallet();
     wallet.applyFromEntity(entity);

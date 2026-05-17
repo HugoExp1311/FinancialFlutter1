@@ -444,8 +444,16 @@ class ProfileScreen extends ConsumerWidget {
                 const SizedBox(height: 32),
                 
                 _buildSettingItem(context, Icons.logout_rounded, AppTranslations.getText(lang, 'logout'), isDanger: true, onTap: () async {
+                  final isar = ref.read(isarProvider);
+                  await isar.writeTxn(() async {
+                    await isar.clear();
+                  });
+                  
+                  ref.invalidate(profileProvider);
+                  ref.invalidate(transactionsStreamProvider);
+                  ref.invalidate(walletsStreamProvider);
+
                   await Supabase.instance.client.auth.signOut();
-                  await ref.read(isarProvider).writeTxn(() async => await ref.read(isarProvider).clear());
                 }),
                 const SizedBox(height: 24),
               ],

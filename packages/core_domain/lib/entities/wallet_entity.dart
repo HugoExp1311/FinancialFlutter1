@@ -4,6 +4,8 @@ class WalletEntity {
   final double balance;
   final String colorHex;
   final String? cardNumber;
+  final bool isDefault;
+  final DateTime? createdAt;
 
   WalletEntity({
     required this.id,
@@ -11,6 +13,8 @@ class WalletEntity {
     required this.balance,
     required this.colorHex,
     this.cardNumber,
+    this.isDefault = false,
+    this.createdAt,
   });
 
   // Chuyển từ dữ liệu Supabase trả về thành Object Flutter
@@ -21,6 +25,8 @@ class WalletEntity {
       balance: (map['balance'] as num).toDouble(),
       colorHex: map['color_hex'],
       cardNumber: map['card_number'],
+      isDefault: map['is_default'] ?? false, 
+      createdAt: map['created_at'] != null ? DateTime.tryParse(map['created_at']) : null,
     );
   }
 }

@@ -28,15 +28,25 @@ const AppWalletSchema = CollectionSchema(
       name: r'colorHex',
       type: IsarType.string,
     ),
-    r'isSynced': PropertySchema(id: 3, name: r'isSynced', type: IsarType.bool),
-    r'name': PropertySchema(id: 4, name: r'name', type: IsarType.string),
-    r'syncId': PropertySchema(id: 5, name: r'syncId', type: IsarType.string),
+    r'createdAt': PropertySchema(
+      id: 3,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'isDefault': PropertySchema(
+      id: 4,
+      name: r'isDefault',
+      type: IsarType.bool,
+    ),
+    r'isSynced': PropertySchema(id: 5, name: r'isSynced', type: IsarType.bool),
+    r'name': PropertySchema(id: 6, name: r'name', type: IsarType.string),
+    r'syncId': PropertySchema(id: 7, name: r'syncId', type: IsarType.string),
     r'updatedAt': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'userId': PropertySchema(id: 7, name: r'userId', type: IsarType.string),
+    r'userId': PropertySchema(id: 9, name: r'userId', type: IsarType.string),
   },
 
   estimateSize: _appWalletEstimateSize,
@@ -127,11 +137,13 @@ void _appWalletSerialize(
   writer.writeDouble(offsets[0], object.balance);
   writer.writeString(offsets[1], object.cardNumber);
   writer.writeString(offsets[2], object.colorHex);
-  writer.writeBool(offsets[3], object.isSynced);
-  writer.writeString(offsets[4], object.name);
-  writer.writeString(offsets[5], object.syncId);
-  writer.writeDateTime(offsets[6], object.updatedAt);
-  writer.writeString(offsets[7], object.userId);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeBool(offsets[4], object.isDefault);
+  writer.writeBool(offsets[5], object.isSynced);
+  writer.writeString(offsets[6], object.name);
+  writer.writeString(offsets[7], object.syncId);
+  writer.writeDateTime(offsets[8], object.updatedAt);
+  writer.writeString(offsets[9], object.userId);
 }
 
 AppWallet _appWalletDeserialize(
@@ -144,12 +156,14 @@ AppWallet _appWalletDeserialize(
   object.balance = reader.readDouble(offsets[0]);
   object.cardNumber = reader.readStringOrNull(offsets[1]);
   object.colorHex = reader.readStringOrNull(offsets[2]);
+  object.createdAt = reader.readDateTimeOrNull(offsets[3]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[3]);
-  object.name = reader.readString(offsets[4]);
-  object.syncId = reader.readString(offsets[5]);
-  object.updatedAt = reader.readDateTime(offsets[6]);
-  object.userId = reader.readString(offsets[7]);
+  object.isDefault = reader.readBool(offsets[4]);
+  object.isSynced = reader.readBool(offsets[5]);
+  object.name = reader.readString(offsets[6]);
+  object.syncId = reader.readString(offsets[7]);
+  object.updatedAt = reader.readDateTime(offsets[8]);
+  object.userId = reader.readString(offsets[9]);
   return object;
 }
 
@@ -167,14 +181,18 @@ P _appWalletDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDateTime(offset)) as P;
+    case 9:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -904,6 +922,80 @@ extension AppWalletQueryFilter
     });
   }
 
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> createdAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'createdAt'),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition>
+  createdAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'createdAt'),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> createdAtEqualTo(
+    DateTime? value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'createdAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition>
+  createdAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> createdAtLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'createdAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> createdAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'createdAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> idEqualTo(
     Id value,
   ) {
@@ -959,6 +1051,16 @@ extension AppWalletQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterFilterCondition> isDefaultEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'isDefault', value: value),
       );
     });
   }
@@ -1512,6 +1614,30 @@ extension AppWalletQuerySortBy on QueryBuilder<AppWallet, AppWallet, QSortBy> {
     });
   }
 
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> sortByIsDefault() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDefault', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> sortByIsDefaultDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDefault', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppWallet, AppWallet, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1611,6 +1737,18 @@ extension AppWalletQuerySortThenBy
     });
   }
 
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
+    });
+  }
+
   QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1620,6 +1758,18 @@ extension AppWalletQuerySortThenBy
   QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenByIsDefault() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDefault', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QAfterSortBy> thenByIsDefaultDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isDefault', Sort.desc);
     });
   }
 
@@ -1708,6 +1858,18 @@ extension AppWalletQueryWhereDistinct
     });
   }
 
+  QueryBuilder<AppWallet, AppWallet, QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
+    });
+  }
+
+  QueryBuilder<AppWallet, AppWallet, QDistinct> distinctByIsDefault() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isDefault');
+    });
+  }
+
   QueryBuilder<AppWallet, AppWallet, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -1768,6 +1930,18 @@ extension AppWalletQueryProperty
   QueryBuilder<AppWallet, String?, QQueryOperations> colorHexProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'colorHex');
+    });
+  }
+
+  QueryBuilder<AppWallet, DateTime?, QQueryOperations> createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<AppWallet, bool, QQueryOperations> isDefaultProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isDefault');
     });
   }
 

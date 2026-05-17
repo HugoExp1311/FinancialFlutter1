@@ -116,6 +116,9 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
   @override
   Future<void> syncAll() async {
+    final currentUser = _supabase.auth.currentUser;
+    if (currentUser == null) return; // Bảo mật: Chưa đăng nhập thì không sync
+
     // PUSH: Đẩy data local chưa sync lên cloud
     final offlineTxs = await _isar.appTransactions
         .filter()
@@ -128,7 +131,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
     // PULL WALLETS: Lấy ví và số dư từ Cloud về
     try {
-      final walletResponse = await _supabase.from('wallets').select().eq('user_id', _supabase.auth.currentUser?.id ?? '');
+      final walletResponse = await _supabase.from('wallets').select().eq('user_id', currentUser.id);
       final List<AppWallet> pulledWallets = [];
       for (var row in walletResponse) {
         final existing = await _isar.appWallets.filter().syncIdEqualTo(row['id']).findFirst();
@@ -137,6 +140,12 @@ class TransactionRepositoryImpl implements ITransactionRepository {
         wallet.name = row['name'] ?? 'Main Wallet';
         wallet.balance = (row['balance'] as num?)?.toDouble() ?? 0.0;
         wallet.userId = row['user_id'];
+        // wallet.colorHex = row['color_hex']; // tạm thời ko xài vì set cứng màu cho ví chính ví phụ ở trang ví rồi
+        wallet.isDefault = row['is_default'] ?? false;
+        if (row['created_at'] != null) {
+          wallet.createdAt = DateTime.tryParse(row['created_at']);
+        }
+
         wallet.isSynced = true;
         wallet.updatedAt = DateTime.now();
         pulledWallets.add(wallet);
@@ -150,7 +159,7 @@ class TransactionRepositoryImpl implements ITransactionRepository {
 
     // PULL TRANSACTIONS: Lấy data mới từ cloud về
     try {
-      final response = await _supabase.from('transactions').select();
+      final response = await _supabase.from('transactions').select().eq('user_id', currentUser.id);
       final List<AppTransaction> pulledTxs = [];
       
       for (final row in response) {
@@ -181,9 +190,12 @@ class TransactionRepositoryImpl implements ITransactionRepository {
   // Hàm phụ: Upsert lên Supabase
   Future<void> _pushToSupabase(AppTransaction tx) async {
     try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) return;
+
       final data = {
         'sync_id': tx.syncId,
-        'user_id': _supabase.auth.currentUser?.id,
+        'user_id': currentUser.id,
         'amount': tx.amount,
         'is_expense': tx.isExpense,
         'category_name': tx.categoryName,

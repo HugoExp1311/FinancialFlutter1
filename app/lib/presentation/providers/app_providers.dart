@@ -45,19 +45,20 @@ final syncTransactionsUseCaseProvider = Provider<SyncTransactionsUseCase>((ref) 
 
 // --- STREAM & COMPUTED LOGIC ---
 
-final transactionsStreamProvider = StreamProvider<List<TransactionEntity>>((ref) {
+final transactionsStreamProvider = StreamProvider.autoDispose<List<TransactionEntity>>((ref) {
   final repository = ref.watch(transactionRepositoryProvider);
   return repository.watchTransactions();
 });
 
-final totalExpenseProvider = Provider<double>((ref) {
+// Lưu ý: Stream chính đã autoDispose thì các Computed Provider phụ thuộc nó cũng PHẢI autoDispose
+final totalExpenseProvider = Provider.autoDispose<double>((ref) {
   final txs = ref.watch(transactionsStreamProvider).value ?? [];
   return txs
       .where((t) => t.isExpense && !t.isDeleted)
       .fold<double>(0.0, (sum, item) => sum + item.amount);
 });
 
-final totalIncomeProvider = Provider<double>((ref) {
+final totalIncomeProvider = Provider.autoDispose<double>((ref) {
   final txs = ref.watch(transactionsStreamProvider).value ?? [];
   return txs
       .where((t) => !t.isExpense && !t.isDeleted)
@@ -65,14 +66,14 @@ final totalIncomeProvider = Provider<double>((ref) {
 });
 
 // Provider để theo dõi danh sách ví từ Isar theo thời gian thực
-final walletsStreamProvider = StreamProvider<List<WalletEntity>>((ref) {
+final walletsStreamProvider = StreamProvider.autoDispose<List<WalletEntity>>((ref) {
   final repository = ref.watch(transactionRepositoryProvider);
   return repository.watchWallets(); 
 });
 
 
 // fetch dữ liệu từ bảng user_profile
-final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
+final profileProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
   final user = Supabase.instance.client.auth.currentUser;
   if (user == null) return null;
 
@@ -90,7 +91,4 @@ final profileProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
 // =============================================================================
 
 /// Trạng thái ẩn/hiện số dư ở màn hình Home
-final hideBalanceProvider = StateProvider<bool>((ref) => false);
-
-/// Trạng thái đơn vị tiền tệ (Mặc định là $)
-final currencyProvider = StateProvider<String>((ref) => '\$');
+final hideBalanceProvider = StateProvider.autoDispose<bool>((ref) => false);

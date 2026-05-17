@@ -278,15 +278,28 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 data: (wallets) {
                   if (wallets.isEmpty) return const Center(child: Text("Chưa có ví nào, vui lòng tạo mới!"));
 
+                  final sortedWallets = wallets.toList()..sort((a, b) {
+                    final isDefA = a.isDefault;
+                    final isDefB = b.isDefault;
+                    
+                    if (isDefA && !isDefB) return -1; 
+                    if (!isDefA && isDefB) return 1;
+
+                    final dateA = a.createdAt ?? DateTime(0);
+                    final dateB = b.createdAt ?? DateTime(0);
+
+                    return dateA.compareTo(dateB);
+                  });
+
                   return RefreshIndicator(
                     onRefresh: () => ref.read(transactionRepositoryProvider).syncAll(),
                     child: ListView.builder(
                       physics: const BouncingScrollPhysics(),
-                      itemCount: wallets.length,
+                      itemCount: sortedWallets.length,
                       itemBuilder: (context, index) {
-                        final wallet = wallets[index];
+                        final wallet = sortedWallets[index];
                         final walletId = wallet.id;
-                        final isMainWallet = index == 0; 
+                        final isMainWallet = wallet.isDefault;
 
                         // Tính số dư (Balance Khởi tạo + Tổng Thu - Tổng Chi)
                         double txSum = 0;
