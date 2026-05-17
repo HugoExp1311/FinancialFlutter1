@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../providers/language_provider.dart';
@@ -26,6 +28,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   String? _selectedWalletId;
   List<Wallet> _wallets = [];
   bool _isLoadingWallets = true;
+  String _currencyUnit = 'VND'; // 'VND' hoặc 'K' (nghìn đồng)
 
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();
@@ -103,6 +106,15 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   List<Map<String, dynamic>> get _currentCategories =>
       _isExpense ? _expenseCategories : _incomeCategories;
 
+  // Custom formatter để thêm dấu phẩy mỗi 3 số
+  String _formatWithCommas(String value) {
+    if (value.isEmpty) return '';
+    final number = int.tryParse(value.replaceAll(',', ''));
+    if (number == null) return value;
+    final formatter = NumberFormat('#,###', 'en_US');
+    return formatter.format(number);
+  }
+
   @override
   void dispose() {
     _amountController.dispose();
@@ -145,23 +157,59 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Text(
-                            AppTranslations.getText(lang, 'enter_amount'),
-                            style: const TextStyle(
-                              color: AppTheme.textSubDark,
-                              fontSize: 14,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                AppTranslations.getText(lang, 'enter_amount'),
+                                style: const TextStyle(
+                                  color: AppTheme.textSubDark,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              // Toggle đơn vị tiền tệ (chỉ hiện khi là Tiếng Việt)
+                              if (lang == 'vi') ...[
+                                const SizedBox(width: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).cardTheme.color,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Theme.of(context).dividerColor),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildUnitButton('VND', 'đ'),
+                                      _buildUnitButton('K', 'K'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           const SizedBox(height: 8),
                           IntrinsicWidth(
                             child: TextField(
                               controller: _amountController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: false),
                               style: TextStyle(
                                 fontSize: 48, 
                                 fontWeight: FontWeight.bold, 
                                 color: Theme.of(context).colorScheme.onSurface
                               ),
+                              onChanged: (value) {
+                                // Format với dấu phẩy khi người dùng nhập
+                                final cleanValue = value.replaceAll(',', '');
+                                if (cleanValue.isNotEmpty && int.tryParse(cleanValue) != null) {
+                                  final formatted = _formatWithCommas(cleanValue);
+                                  if (formatted != value) {
+                                    _amountController.value = TextEditingValue(
+                                      text: formatted,
+                                      selection: TextSelection.collapsed(offset: formatted.length),
+                                    );
+                                  }
+                                }
+                              },
                               decoration: InputDecoration(
                                 prefixText: lang == 'en' ? '\$ ' : null,
                                 prefixStyle: TextStyle(
@@ -169,7 +217,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                                   fontWeight: FontWeight.bold,
                                   color: Theme.of(context).colorScheme.onSurface,
                                 ),
-                                suffixText: lang == 'vi' ? ' đ' : null,
+                                suffixText: lang == 'vi' ? (_currencyUnit == 'VND' ? ' đ' : ' K') : null,
                                 suffixStyle: TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.bold,
@@ -326,12 +374,19 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       return;
     }
 
-    final amountInputRaw = double.tryParse(_amountController.text) ?? 0.0;
+    // Loại bỏ dấu phẩy trước khi parse
+    final cleanAmount = _amountController.text.replaceAll(',', '');
+    final amountInputRaw = double.tryParse(cleanAmount) ?? 0.0;
     if (amountInputRaw <= 0) return;
 
     double amountInUsd = amountInputRaw;
     if (lang == 'vi') {
-      amountInUsd = amountInputRaw / 25000;
+      // Nếu đơn vị là nghìn đồng (K), nhân với 1000
+      if (_currencyUnit == 'K') {
+        amountInUsd = (amountInputRaw * 1000) / 25000;
+      } else {
+        amountInUsd = amountInputRaw / 25000;
+      }
     }
 
     final selectedCat = _currentCategories.firstWhere((c) => c['name'] == _selectedCategory);
@@ -412,6 +467,28 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           ),
           child: Center(
             child: Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: isActive ? activeColor : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5))),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitButton(String unit, String label) {
+    final isActive = _currencyUnit == unit;
+    return GestureDetector(
+      onTap: () => setState(() => _currencyUnit = unit),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.primaryColor.withValues(alpha: 0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: isActive ? AppTheme.primaryColor : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
           ),
         ),
       ),
