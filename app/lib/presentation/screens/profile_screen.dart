@@ -199,48 +199,56 @@ class ProfileScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Container(
               decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                  const SizedBox(height: 16),
-                  const Text('Security & FaceID', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                left: 24, right: 24, top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                    const SizedBox(height: 16),
+                    Text('Security & FaceID', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                    const SizedBox(height: 24),
 
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.password_rounded, color: Colors.orange)),
-                    title: const Text('Mã PIN ứng dụng', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Yêu cầu nhập PIN khi mở app'),
-                    value: isAppLockEnabled, onChanged: (v) => setState(() { isAppLockEnabled = v; if (!v) isBiometricEnabled = false; }),
-                  ),
-                  const Divider(height: 24),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.face_retouching_natural_rounded, color: Colors.green)),
-                    title: const Text('Xác thực FaceID / TouchID', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Mở khóa nhanh bằng sinh trắc học'),
-                    value: isBiometricEnabled, onChanged: isAppLockEnabled ? (v) => setState(() => isBiometricEnabled = v) : null, 
-                  ),
-                  const Divider(height: 24),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.visibility_off_rounded, color: Colors.purple)),
-                    title: const Text('Ẩn số dư mặc định', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Làm mờ số tiền ở màn hình Home'),
-                    value: isHideBalanceEnabled,
-                    onChanged: (v) {
-                      setState(() => isHideBalanceEnabled = v);
-                      ref.read(hideBalanceProvider.notifier).state = v;
-                    },
-                  ),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-                ],
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.password_rounded, color: Colors.orange)),
+                      title: Text('Mã PIN ứng dụng', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Yêu cầu nhập PIN khi mở app', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isAppLockEnabled, onChanged: (v) => setState(() { isAppLockEnabled = v; if (!v) isBiometricEnabled = false; }),
+                    ),
+                    const Divider(height: 24),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.face_retouching_natural_rounded, color: Colors.green)),
+                      title: Text('Xác thực FaceID / TouchID', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Mở khóa nhanh bằng sinh trắc học', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isBiometricEnabled, onChanged: isAppLockEnabled ? (v) => setState(() => isBiometricEnabled = v) : null, 
+                    ),
+                    const Divider(height: 24),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.visibility_off_rounded, color: Colors.purple)),
+                      title: Text('Ẩn số dư mặc định', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Làm mờ số tiền ở màn hình Home', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isHideBalanceEnabled,
+                      onChanged: (v) {
+                        setState(() => isHideBalanceEnabled = v);
+                        ref.read(hideBalanceProvider.notifier).state = v;
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -257,44 +265,52 @@ class ProfileScreen extends ConsumerWidget {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Container(
               decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-                  const SizedBox(height: 16),
-                  const Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                left: 24, right: 24, top: 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                    const SizedBox(height: 16),
+                    Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                    const SizedBox(height: 24),
 
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.access_alarm_rounded, color: AppTheme.primaryColor)),
-                    title: const Text('Nhắc nhở hàng ngày', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Nhắc bạn ghi chép vào 20:00 mỗi tối'),
-                    value: isDailyReminderEnabled, onChanged: (v) => setState(() => isDailyReminderEnabled = v),
-                  ),
-                  const Divider(height: 24),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppTheme.expenseColor.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.warning_amber_rounded, color: AppTheme.expenseColor)),
-                    title: const Text('Cảnh báo vượt ngân sách', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Gửi thông báo khi chi tiêu sắp vượt hạn mức'),
-                    value: isBudgetAlertEnabled, onChanged: (v) => setState(() => isBudgetAlertEnabled = v),
-                  ),
-                  const Divider(height: 24),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
-                    secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.campaign_outlined, color: Colors.blue)),
-                    title: const Text('Cập nhật hệ thống & Tin tức', style: TextStyle(fontWeight: FontWeight.w500)), subtitle: const Text('Nhận thông báo về tính năng mới'),
-                    value: isPromoEnabled, onChanged: (v) => setState(() => isPromoEnabled = v),
-                  ),
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
-                ],
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.access_alarm_rounded, color: AppTheme.primaryColor)),
+                      title: Text('Nhắc nhở hàng ngày', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Nhắc bạn ghi chép vào 20:00 mỗi tối', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isDailyReminderEnabled, onChanged: (v) => setState(() => isDailyReminderEnabled = v),
+                    ),
+                    const Divider(height: 24),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: AppTheme.expenseColor.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.warning_amber_rounded, color: AppTheme.expenseColor)),
+                      title: Text('Cảnh báo vượt ngân sách', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Gửi thông báo khi chi tiêu sắp vượt hạn mức', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isBudgetAlertEnabled, onChanged: (v) => setState(() => isBudgetAlertEnabled = v),
+                    ),
+                    const Divider(height: 24),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero, activeColor: AppTheme.primaryColor,
+                      secondary: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle), child: const Icon(Icons.campaign_outlined, color: Colors.blue)),
+                      title: Text('Cập nhật hệ thống & Tin tức', style: TextStyle(fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)), 
+                      subtitle: Text('Nhận thông báo về tính năng mới', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                      value: isPromoEnabled, onChanged: (v) => setState(() => isPromoEnabled = v),
+                    ),
+                  ],
+                ),
               ),
             );
           },
