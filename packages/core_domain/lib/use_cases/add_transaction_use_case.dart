@@ -18,6 +18,7 @@ class AddTransactionUseCase {
     required int categoryIconCode,
     required int categoryColorHex,
     String? note,
+    String? walletId, // 1. THÊM THAM SỐ NÀY
   }) async {
     // --- VALIDATION (Business Rules) ---
     if (amount <= 0) {
@@ -26,8 +27,9 @@ class AddTransactionUseCase {
     if (categoryName.trim().isEmpty) {
       throw ArgumentError('Danh mục không được để trống.');
     }
+    // if (walletId == null) throw ArgumentError('Phải chọn một ví thanh toán.');
 
-    // --- SINH ĐỊNH DANH (Domain responsibility, không phải UI) ---
+    // --- SINH ĐỊNH DANH & GÁN VÍ ---
     final entity = TransactionEntity(
       syncId: _uuid.v4(),
       amount: amount,
@@ -37,6 +39,7 @@ class AddTransactionUseCase {
       categoryName: categoryName.trim(),
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
+      walletId: walletId, // 2. GÁN VÍ VÀO ENTITY TẠI ĐÂY
       updatedAt: DateTime.now().toUtc(),
       isSynced: false,
       isDeleted: false,

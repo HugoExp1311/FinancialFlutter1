@@ -5,13 +5,19 @@ import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../providers/app_providers.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart'; // Chụp ảnh từ nhánh bạn
+import 'package:flutter_markdown/flutter_markdown.dart'; // Markdown từ nhánh Thu
 import '../providers/language_provider.dart';
 import '../utils/app_translations.dart';
 
 class ChatMessage {
   final String text;
   final bool isUser;
+  final List<String> quickReplies = [
+    "🎯 Tư vấn tài chính",
+    "📊 Thống kê tháng này",
+    "💸 Mẹo tiết kiệm",
+  ];
 
   ChatMessage({required this.text, required this.isUser});
 }
@@ -23,7 +29,7 @@ class ChatMessagesNotifier extends Notifier<List<ChatMessage>> {
   List<ChatMessage> build() {
     return [
       ChatMessage(
-        text: introKey, // lưu dưới dạng key để dịch tn
+        text: introKey, // Lưu dưới dạng key để dịch tin nhắn đa ngôn ngữ
         isUser: false,
       ),
     ];
@@ -59,6 +65,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _base64Image;
 
+  // Tính năng chụp ảnh hóa đơn từ nhánh Bạn
   Future<void> _pickImage() async {
     final lang = ref.read(languageProvider);
     try {
@@ -72,7 +79,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         final bytes = await image.readAsBytes();
         _base64Image = base64Encode(bytes);
 
-        // hiển thị tn người dùng gửi ảnh
+        // Hiển thị tin nhắn người dùng gửi ảnh
         ref
             .read(chatMessagesProvider.notifier)
             .addMessage(
@@ -114,7 +121,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
     final lang = ref.read(languageProvider);
     final scanPrompt = AppTranslations.getText(lang, 'scan_invoice_prompt');
 
-    // chỉ in tin nhắn nếu k phải quét ảnh
+    // Chỉ in tin nhắn nếu không phải prompt quét ảnh ẩn
     if (text != scanPrompt) {
       ref
           .read(chatMessagesProvider.notifier)
@@ -154,30 +161,30 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
           _isLoading = false;
         });
 
+        // Bóc tách JSON an toàn (Kết hợp cả 2 nhánh)
+        String resultText = responseBody.trim();
+
         try {
-          final responseJson = jsonDecode(responseBody);
-          final replyText =
-              responseJson['replyMessage'] ??
-              responseJson['bot_text'] ??
-              AppTranslations.getText(lang, 'parse_error');
-
-          ref
-              .read(chatMessagesProvider.notifier)
-              .addMessage(ChatMessage(text: replyText, isUser: false));
-
-          if (responseJson['replyMessage'] != null) {
-            ref.read(syncTransactionsUseCaseProvider).execute();
+          final decoded = jsonDecode(responseBody);
+          if (decoded is Map) {
+            resultText = decoded['replyMessage'] ?? decoded['output'] ?? decoded['bot_text'] ?? AppTranslations.getText(lang, 'parse_error');
+            
+            // Nếu AI ghi chép thành công thì bắt app tự đồng bộ dữ liệu
+            if (decoded['replyMessage'] != null || decoded['output'] != null) {
+              ref.read(syncTransactionsUseCaseProvider).execute();
+            }
           }
         } catch (e) {
-          ref
-              .read(chatMessagesProvider.notifier)
-              .addMessage(
-                ChatMessage(
-                  text:
-                      '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody',
-                  isUser: false,
-                ),
-              );
+          // Nếu không phải JSON thì bắt lỗi incompatible
+          if (resultText.isEmpty) {
+            resultText = '${AppTranslations.getText(lang, 'ai_incompatible')}$responseBody';
+          }
+        }
+
+        if (resultText.isNotEmpty) {
+          ref.read(chatMessagesProvider.notifier).addMessage(
+                ChatMessage(text: resultText, isUser: false),
+          );
         }
         _scrollToBottom();
       }
@@ -209,9 +216,7 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   @override
   Widget build(BuildContext context) {
     final messages = ref.watch(chatMessagesProvider);
-    final lang = ref.watch(
-      languageProvider,
-    );
+    final lang = ref.watch(languageProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -306,21 +311,30 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8, // Giới hạn chiều rộng
+            ),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: borderRadius,
               border: isUser
                   ? null
                   : Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                     ),
             ),
-            child: Text(
-              displayText,
-              style: TextStyle(color: textColor, fontSize: 16),
-            ),
+            // SỬ DỤNG MARKDOWN CỦA THU NẾU LÀ BOT TRẢ LỜI
+            child: isUser 
+              ? Text(displayText, style: TextStyle(color: textColor, fontSize: 16))
+              : MarkdownBody(
+                  data: displayText,
+                  styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                    p: TextStyle(color: textColor, fontSize: 16, height: 1.5),
+                    strong: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                    listBullet: TextStyle(color: textColor, fontSize: 16),
+                    blockSpacing: 10,
+                  ),
+                ),
           ),
         ],
       ),
@@ -328,6 +342,13 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
   }
 
   Widget _buildTextComposer(String lang) {
+    // Danh sách các gợi ý nhanh (Của Thu)
+    final List<String> quickReplies = [
+      "🎯 Tư vấn tài chính",
+      "📊 Thống kê tháng này",
+      "💸 Mẹo tiết kiệm",
+    ];
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -341,53 +362,75 @@ class _ChatbotScreenState extends ConsumerState<ChatbotScreen> {
         ],
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(
-                Icons.add_a_photo_rounded,
-                color: AppTheme.textSubDark,
+            // HÀNG NÚT BẤM GỢI Ý NHANH (CỦA THU)
+            SizedBox(
+              height: 45,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                children: quickReplies.map((text) => Padding(
+                  padding: const EdgeInsets.only(right: 10.0),
+                  child: ActionChip(
+                    label: Text(text, style: const TextStyle(fontSize: 12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: AppTheme.incomeColor.withValues(alpha: 0.1),
+                    side: BorderSide(color: AppTheme.incomeColor.withValues(alpha: 0.3)),
+                    onPressed: () => _handleSubmitted(text),
+                  ),
+                )).toList(),
               ),
-              onPressed: _pickImage,
-              tooltip: AppTranslations.getText(lang, 'send_invoice'),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(height: 8),
 
-            Expanded(
-              child: TextField(
-                controller: _textController,
-                textInputAction: TextInputAction.send,
-                onSubmitted: _handleSubmitted,
-                decoration: InputDecoration(
-                  hintText: AppTranslations.getText(lang, 'chat_hint'),
-                  hintStyle: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.4),
+            // Ô NHẬP LIỆU & NÚT GỬI ẢNH (CỦA BẠN)
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.add_a_photo_rounded,
+                    color: AppTheme.textSubDark,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surface,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+                  onPressed: _pickImage,
+                  tooltip: AppTranslations.getText(lang, 'send_invoice'),
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _handleSubmitted,
+                    decoration: InputDecoration(
+                      hintText: AppTranslations.getText(lang, 'chat_hint'),
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surface,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              decoration: const BoxDecoration(
-                color: AppTheme.incomeColor,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.send_rounded, color: Colors.white),
-                onPressed: () => _handleSubmitted(_textController.text),
-              ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: const BoxDecoration(
+                    color: AppTheme.incomeColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.send_rounded, color: Colors.white),
+                    onPressed: () => _handleSubmitted(_textController.text),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_theme.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/transaction_item.dart';
@@ -15,154 +16,177 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageProvider);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildAppBar(context, ref),
-            const SizedBox(height: 24),
-            const BalanceCard(),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  AppTranslations.getText(lang, 'recent_transactions'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    AppTranslations.getText(
-                      lang,
-                      'see_all',
-                    ),
-                    style: const TextStyle(color: AppTheme.primaryColor),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  await ref.read(syncTransactionsUseCaseProvider).execute();
-                },
-                child: _buildTransactionList(ref),
+    final lang = ref.watch(languageProvider); // Ngôn ngữ từ nhánh bạn
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+        // Giữ cấu trúc Slivers cuộn mượt của Thu
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              sliver: SliverToBoxAdapter(
+                child: _buildAppBar(context, ref, lang), // Truyền ngôn ngữ vào AppBar
               ),
             ),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverPadding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              sliver: SliverToBoxAdapter(child: BalanceCard()),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      AppTranslations.getText(lang, 'recent_transactions'), // Đa ngôn ngữ
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5),
+                    ),
+                    TextButton(
+                      onPressed: () {},
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      child: Text(
+                        AppTranslations.getText(lang, 'see_all'), // Đa ngôn ngữ
+                        style: const TextStyle(fontWeight: FontWeight.bold)
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildTransactionList(ref, lang), // Truyền ngôn ngữ vào List
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTransactionList(WidgetRef ref) {
+  Widget _buildTransactionList(WidgetRef ref, String lang) {
     final transactionsAsyncValue = ref.watch(transactionsStreamProvider);
-    final lang = ref.watch(languageProvider);
 
     return transactionsAsyncValue.when(
       data: (transactions) {
         if (transactions.isEmpty) {
-          return Center(
-            child: Text(
-              AppTranslations.getText(lang, 'no_transactions_yet'),
-              style: const TextStyle(color: AppTheme.textSubDark),
+          return SliverFillRemaining(
+            child: Center(
+              child: Text(
+                AppTranslations.getText(lang, 'no_transactions_yet'), // Đa ngôn ngữ
+                style: const TextStyle(color: Colors.grey)
+              ),
             ),
           );
         }
-        return ListView.builder(
-          physics: const BouncingScrollPhysics(),
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            final tx = transactions[index];
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final tx = transactions[index];
+                
+                // LOGIC ĐA NGÔN NGỮ VÀ TIỀN TỆ CỦA BẠN
+                final displayCategoryName = AppTranslations.getText(
+                  lang,
+                  tx.categoryName.toLowerCase(),
+                );
+                final sign = tx.isExpense ? '-' : '+';
+                final formattedAmt = FormatUtils.formatCurrency(tx.amount.abs(), lang);
 
-            final displayCategoryName = AppTranslations.getText(
-              lang,
-              tx.categoryName.toLowerCase(),
-            );
-
-            final sign = tx.isExpense ? '-' : '+';
-            final formattedAmt = FormatUtils.formatCurrency(tx.amount.abs(), lang);
-
-            return GestureDetector(
-              onLongPress: () =>
-                  TransactionActions.showOptions(context, ref, tx),
-              onTap: () => TransactionActions.showOptions(context, ref, tx),
-              child: TransactionItem(
-                title: displayCategoryName,
-                date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
-                amountText: '$sign$formattedAmt',
-                isExpense: tx.isExpense,
-                icon: CategoryUtils.getIcon(
-                  tx.categoryName,
-                ),
-                iconColor: CategoryUtils.getColor(
-                  tx.categoryName,
-                ),
-              ),
-            );
-          },
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: InkWell(
+                    onLongPress: () => TransactionActions.showOptions(context, ref, tx),
+                    onTap: () => TransactionActions.showOptions(context, ref, tx),
+                    borderRadius: BorderRadius.circular(20),
+                    child: TransactionItem(
+                      title: displayCategoryName,
+                      date: '${tx.date.day}/${tx.date.month}/${tx.date.year}',
+                      amountText: '$sign$formattedAmt', // Dùng chuỗi tiền tệ đã format
+                      isExpense: tx.isExpense,
+                      icon: CategoryUtils.getIcon(tx.categoryName),
+                      iconColor: CategoryUtils.getColor(tx.categoryName),
+                    ),
+                  ),
+                );
+              },
+              childCount: transactions.length,
+            ),
+          ),
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Text('${AppTranslations.getText(lang, 'error')}: $error'),
+      loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+      error: (error, stack) => SliverFillRemaining(
+        child: Center(child: Text('${AppTranslations.getText(lang, 'error')}: $error'))
       ),
     );
   }
 
-  Widget _buildAppBar(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageProvider);
+  Widget _buildAppBar(BuildContext context, WidgetRef ref, String lang) {
+    // Logic kéo Avatar và Tên từ Supabase của Thu
+    final profileAsync = ref.watch(profileProvider);
+    final user = Supabase.instance.client.auth.currentUser;
+
+    String displayName = profileAsync.maybeWhen(
+      data: (profile) {
+        final name = '${profile?['first_name'] ?? ''} ${profile?['last_name'] ?? ''}'.trim();
+        return name.isNotEmpty ? name : (user?.email?.split('@')[0] ?? 'User');
+      },
+      orElse: () => 'Loading...',
+    );
+
+    String? avatarUrl = profileAsync.maybeWhen(
+      data: (profile) => profile?['avatar_url'],
+      orElse: () => null,
+    );
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              AppTranslations.getText(lang, 'welcome'),
-              style: const TextStyle(fontSize: 14, color: AppTheme.textSubDark),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'vvinh!',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-          ],
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2), width: 2),
+          ),
+          child: CircleAvatar(
+            radius: 24,
+            backgroundColor: Colors.grey[200],
+            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : const NetworkImage('https://i.pravatar.cc/150?img=11'),
+          ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: AppTranslations.getText(lang, 'sync_data'),
-              icon: const Icon(Icons.sync_rounded, color: AppTheme.textSubDark),
-              onPressed: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      AppTranslations.getText(lang, 'syncing_with_cloud'),
-                    ),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-                await ref.read(syncTransactionsUseCaseProvider).execute();
-              },
-            ),
-            const SizedBox(width: 4),
-            const CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage('https://thf.bing.com/th/id/OIP.NifcFumqU3GDz-nL_NKS-AHaE-?o=7&cb=thfc1rm=3&rs=1&pid=ImgDetMain&o=7&rm=3'),
-              backgroundColor: Colors.transparent,
-            ),
-          ],
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppTranslations.getText(lang, 'welcome'), // Chữ "Chào mừng trở lại" đa ngôn ngữ
+                style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)
+              ),
+              Text(
+                displayName,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+        IconButton.filledTonal(
+          icon: const Icon(Icons.sync_rounded),
+          onPressed: () async {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppTranslations.getText(lang, 'syncing_with_cloud')),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+            await ref.read(syncTransactionsUseCaseProvider).execute();
+          },
         ),
       ],
     );

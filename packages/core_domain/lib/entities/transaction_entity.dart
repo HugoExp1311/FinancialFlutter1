@@ -23,6 +23,7 @@ class TransactionEntity extends Equatable {
   final DateTime updatedAt;
   final bool isSynced;
   final bool isDeleted;
+  final String? walletId;
 
   const TransactionEntity({
     this.localId,
@@ -37,6 +38,7 @@ class TransactionEntity extends Equatable {
     required this.updatedAt,
     this.isSynced = false,
     this.isDeleted = false,
+    this.walletId,
   });
 
   /// Tạo bản sao mới khi cần thay đổi dữ liệu
@@ -53,6 +55,7 @@ class TransactionEntity extends Equatable {
     DateTime? updatedAt,
     bool? isSynced,
     bool? isDeleted,
+    String? walletId,
   }) {
     return TransactionEntity(
       localId: localId ?? this.localId,
@@ -67,6 +70,7 @@ class TransactionEntity extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
       isDeleted: isDeleted ?? this.isDeleted,
+      walletId: walletId ?? this.walletId,
     );
   }
 
@@ -83,6 +87,7 @@ class TransactionEntity extends Equatable {
         updatedAt,
         isSynced,
         isDeleted,
+        walletId,
       ];
 
   @override

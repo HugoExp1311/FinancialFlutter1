@@ -20,10 +20,13 @@ class AppTransaction {
 
   String? note;
 
-  // Flatten category data
+  // --- THÊM TRƯỜNG WALLET ID TẠI ĐÂY ---
+  @Index()
+  String? walletId; 
+
   late String categoryName;
-  late int categoryIconCode; 
-  late int categoryColorHex; 
+  late int categoryIconCode;
+  late int categoryColorHex;
 
   late DateTime updatedAt;
 
@@ -41,6 +44,7 @@ class AppTransaction {
       isExpense: isExpense,
       date: date,
       note: note,
+      walletId: walletId, // CHUYỂN SANG ENTITY
       categoryName: categoryName,
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
@@ -58,6 +62,7 @@ class AppTransaction {
     isExpense = entity.isExpense;
     date = entity.date;
     note = entity.note;
+    walletId = entity.walletId; // ÁP DỤNG TỪ ENTITY
     categoryName = entity.categoryName;
     categoryIconCode = entity.categoryIconCode;
     categoryColorHex = entity.categoryColorHex;
@@ -70,5 +75,20 @@ class AppTransaction {
     final tx = AppTransaction();
     tx.applyFromEntity(entity);
     return tx;
+  }
+
+  void applyFromRow(Map<String, dynamic> row) {
+    syncId = row['sync_id'];
+    amount = (row['amount'] as num).toDouble();
+    isExpense = row['is_expense'];
+    categoryName = row['category_name'];
+    categoryIconCode = row['category_icon_code'];
+    categoryColorHex = row['category_color_hex'];
+    note = row['note'];
+    walletId = row['wallet_id'];
+    date = DateTime.parse(row['date']);
+    updatedAt = DateTime.parse(row['updated_at']);
+    isDeleted = row['is_deleted'];
+    isSynced = true;
   }
 }

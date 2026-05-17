@@ -136,6 +136,12 @@ int _appTransactionEstimateSize(
     }
   }
   bytesCount += 3 + object.syncId.length * 3;
+  {
+    final value = object.walletId;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -156,6 +162,7 @@ void _appTransactionSerialize(
   writer.writeString(offsets[8], object.note);
   writer.writeString(offsets[9], object.syncId);
   writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[11], object.walletId);
 }
 
 AppTransaction _appTransactionDeserialize(
@@ -177,6 +184,7 @@ AppTransaction _appTransactionDeserialize(
   object.note = reader.readStringOrNull(offsets[8]);
   object.syncId = reader.readString(offsets[9]);
   object.updatedAt = reader.readDateTime(offsets[10]);
+  object.walletId = reader.readStringOrNull(offsets[11]);
   return object;
 }
 
@@ -209,6 +217,8 @@ P _appTransactionDeserializeProp<P>(
       return (reader.readString(offset)) as P;
     case 10:
       return (reader.readDateTime(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -1626,6 +1636,19 @@ extension AppTransactionQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy> sortByWalletId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'walletId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
+  sortByWalletIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'walletId', Sort.desc);
+    });
+  }
 }
 
 extension AppTransactionQuerySortThenBy
@@ -1785,6 +1808,19 @@ extension AppTransactionQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy> thenByWalletId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'walletId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterSortBy>
+  thenByWalletIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'walletId', Sort.desc);
+    });
+  }
 }
 
 extension AppTransactionQueryWhereDistinct
@@ -1864,6 +1900,14 @@ extension AppTransactionQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<AppTransaction, AppTransaction, QDistinct> distinctByWalletId({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'walletId', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension AppTransactionQueryProperty
@@ -1940,6 +1984,12 @@ extension AppTransactionQueryProperty
   QueryBuilder<AppTransaction, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<AppTransaction, String?, QQueryOperations> walletIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'walletId');
     });
   }
 }

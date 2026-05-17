@@ -3,6 +3,7 @@
 
 // --- Entities ---
 export 'entities/transaction_entity.dart';
+export 'entities/wallet_entity.dart';
 
 // --- Repository Interfaces ---
 export 'repositories/i_transaction_repository.dart';

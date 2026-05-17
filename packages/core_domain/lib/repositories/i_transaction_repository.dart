@@ -1,4 +1,5 @@
 import 'package:core_domain/entities/transaction_entity.dart';
+import 'package:core_domain/entities/wallet_entity.dart'; // Thêm dòng này
 
 /// Interface định nghĩa các hành vi tương tác với dữ liệu Giao dịch.
 /// Cho phép linh hoạt chuyển đổi giữa Local DB (Isar) và Remote API (HTTP).
@@ -16,9 +17,8 @@ abstract interface class ITransactionRepository {
   /// tìm kiếm giao dịch qua mã định danh syncId.
   Future<TransactionEntity?> getTransactionBySyncId(String syncId);
 
-  // -------------------------------------------------------------------------
-  // WRITE
-  // -------------------------------------------------------------------------
+  // MỚI: Thêm hàm theo dõi ví vào Interface
+  Stream<List<WalletEntity>> watchWallets();
 
   ///  thêm giao dịch mới.
   Future<void> addTransaction(TransactionEntity transaction);
