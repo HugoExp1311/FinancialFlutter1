@@ -52,6 +52,11 @@ const AppTransactionSchema = CollectionSchema(
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
+    r'walletId': PropertySchema(
+      id: 11,
+      name: r'walletId',
+      type: IsarType.string,
+    ),
   },
 
   estimateSize: _appTransactionEstimateSize,
@@ -96,6 +101,19 @@ const AppTransactionSchema = CollectionSchema(
           name: r'date',
           type: IndexType.value,
           caseSensitive: false,
+        ),
+      ],
+    ),
+    r'walletId': IndexSchema(
+      id: -1783113319798776304,
+      name: r'walletId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'walletId',
+          type: IndexType.hash,
+          caseSensitive: true,
         ),
       ],
     ),
@@ -608,6 +626,81 @@ extension AppTransactionQueryWhere
           includeUpper: includeUpper,
         ),
       );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterWhereClause>
+  walletIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'walletId', value: [null]),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterWhereClause>
+  walletIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.between(
+          indexName: r'walletId',
+          lower: [null],
+          includeLower: false,
+          upper: [],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterWhereClause>
+  walletIdEqualTo(String? walletId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'walletId', value: [walletId]),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterWhereClause>
+  walletIdNotEqualTo(String? walletId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'walletId',
+                lower: [],
+                upper: [walletId],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'walletId',
+                lower: [walletId],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'walletId',
+                lower: [walletId],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'walletId',
+                lower: [],
+                upper: [walletId],
+                includeUpper: false,
+              ),
+            );
+      }
     });
   }
 
@@ -1480,6 +1573,165 @@ extension AppTransactionQueryFilter
           upper: upper,
           includeUpper: includeUpper,
         ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'walletId'),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'walletId'),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'walletId',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'walletId',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'walletId',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'walletId', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<AppTransaction, AppTransaction, QAfterFilterCondition>
+  walletIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'walletId', value: ''),
       );
     });
   }
