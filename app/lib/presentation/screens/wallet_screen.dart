@@ -32,6 +32,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     final isEditing = existingWallet != null;
     final nameController = TextEditingController(text: isEditing ? existingWallet.name : '');
     final balanceController = TextEditingController(text: isEditing ? existingWallet.balance.toString() : '');
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showModalBottomSheet(
       context: context,
@@ -47,7 +48,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10))),
+            Container(width: 50, height: 5, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(10))),
             const SizedBox(height: 24),
             
             Container(
@@ -56,21 +57,24 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               child: const Icon(Icons.account_balance_wallet_rounded, color: AppTheme.primaryColor, size: 36),
             ),
             const SizedBox(height: 16),
-            Text(isEditing ? 'Update Wallet' : 'Create New Wallet', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
+            Text(isEditing ? 'Update Wallet' : 'Create New Wallet', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: Theme.of(context).colorScheme.onSurface)),
             const SizedBox(height: 8),
-            Text(isEditing ? 'Modify your wallet details' : 'Add a new source of funds', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+            Text(isEditing ? 'Modify your wallet details' : 'Add a new source of funds', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14)),
             const SizedBox(height: 32),
             
             TextField(
               controller: nameController,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 labelText: 'Wallet Name',
+                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 hintText: 'e.g., Cash, Credit Card, Momo...',
-                prefixIcon: const Icon(Icons.label_outline_rounded, color: Colors.grey),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+                prefixIcon: Icon(Icons.label_outline_rounded, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.grey.shade200)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2)),
               ),
             ),
@@ -80,15 +84,18 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             TextField(
               controller: balanceController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              enabled: !isEditing, 
+              enabled: !isEditing,
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 labelText: 'Initial Balance',
+                labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                 hintText: '0.00',
-                prefixIcon: const Icon(Icons.attach_money_rounded, color: Colors.grey),
+                hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)),
+                prefixIcon: Icon(Icons.attach_money_rounded, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                 filled: true,
-                fillColor: !isEditing ? Colors.grey.shade50 : Colors.grey.shade200,
+                fillColor: !isEditing ? (isDark ? Colors.grey.shade800 : Colors.grey.shade50) : (isDark ? Colors.grey.shade900 : Colors.grey.shade200),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Colors.grey.shade200)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide(color: Theme.of(context).dividerColor)),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2)),
               ),
             ),

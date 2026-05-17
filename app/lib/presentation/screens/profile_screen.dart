@@ -70,13 +70,15 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     InputDecoration customInputDecoration(String label, IconData icon) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       return InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: Colors.grey.shade600),
+        labelStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface),
+        prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
         filled: true,
-        fillColor: Colors.grey.shade50,
+        fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Colors.grey.shade200, width: 1)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2)),
       );
     }
@@ -102,20 +104,20 @@ class ProfileScreen extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+                    Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Theme.of(context).dividerColor, borderRadius: BorderRadius.circular(2)))),
                     const SizedBox(height: 16),
-                    const Text('Account Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text('Account Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
                     const SizedBox(height: 24),
                     
                     Row(
                       children: [
-                        Expanded(child: TextField(controller: firstNameController, decoration: customInputDecoration('First Name', Icons.person_outline))),
+                        Expanded(child: TextField(controller: firstNameController, style: TextStyle(color: Theme.of(context).colorScheme.onSurface), decoration: customInputDecoration('First Name', Icons.person_outline))),
                         const SizedBox(width: 12),
-                        Expanded(child: TextField(controller: lastNameController, decoration: customInputDecoration('Last Name', Icons.badge_outlined))),
+                        Expanded(child: TextField(controller: lastNameController, style: TextStyle(color: Theme.of(context).colorScheme.onSurface), decoration: customInputDecoration('Last Name', Icons.badge_outlined))),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    TextField(controller: phoneController, keyboardType: TextInputType.phone, decoration: customInputDecoration('Phone Number', Icons.phone_outlined)),
+                    TextField(controller: phoneController, keyboardType: TextInputType.phone, style: TextStyle(color: Theme.of(context).colorScheme.onSurface), decoration: customInputDecoration('Phone Number', Icons.phone_outlined)),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -123,6 +125,7 @@ class ProfileScreen extends ConsumerWidget {
                           flex: 1,
                           child: TextField(
                             controller: dobController, readOnly: true,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             decoration: customInputDecoration('Date of Birth', Icons.calendar_today_rounded),
                             onTap: () async {
                               final pickedDate = await showDatePicker(context: context, initialDate: DateTime(2000), firstDate: DateTime(1900), lastDate: DateTime.now());
@@ -138,6 +141,7 @@ class ProfileScreen extends ConsumerWidget {
                           child: DropdownButtonFormField<String>(
                             isExpanded: true,
                             value: selectedGender,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
                             decoration: customInputDecoration('Gender', Icons.wc_outlined).copyWith(prefixIcon: null),
                             items: genderOptions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                             onChanged: (v) => setState(() => selectedGender = v),
