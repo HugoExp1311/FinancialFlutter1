@@ -44,7 +44,7 @@ services:
       - PORT=3002
       - HOST=0.0.0.0
       # Để dùng domain thật, bỏ comment dòng dưới và điền link webhook của bạn
-      # - N8N_WEBHOOK_URL=https://n8n.vault.io.vn/webhook/ai-chat
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL}
     env_file:
       - ../app/.env
     restart: unless-stopped
