@@ -1,0 +1,140 @@
+name: Release Management
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: 📦 Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🏷️ Get Latest Tag
+        id: get_tag
+        run: |
+          # Lấy tag mới nhất hoặc tạo tag đầu tiên
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          
+          # Tính toán version mới (tăng patch version)
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v$MAJOR.$MINOR.$NEW_PATCH"
+          
+          # Nếu có input thủ công, dùng input đó
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            NEW_VERSION="v${{ github.event.inputs.version }}"
+          fi
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📌 New version: $NEW_VERSION"
+
+      - name: 📝 Generate Release Notes
+        id: release_notes
+        run: |
+          LATEST_TAG="${{ steps.get_tag.outputs.latest_tag }}"
+          NEW_VERSION="${{ steps.get_tag.outputs.new_version }}"
+          
+          # Tạo changelog từ commits
+          echo "## 🚀 What's Changed" > release_notes.md
+          echo "" >> release_notes.md
+          
+          # Lấy danh sách commits từ tag cuối đến HEAD
+          git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges >> release_notes.md
+          
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## 📦 Assets" >> release_notes.md
+          echo "- **Web Build**: Deployed to production server" >> release_notes.md
+          echo "- **Android APK**: Available in workflow artifacts" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$LATEST_TAG...$NEW_VERSION" >> release_notes.md
+          
+          cat release_notes.md
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 🔨 Build Release APK
+        working-directory: ./app
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+
+      - name: 🔨 Build Release Web
+        working-directory: ./app
+        run: |
+          flutter build web --release --web-renderer canvaskit
+
+      - name: 📦 Create Release Archive
+        run: |
+          mkdir -p release_assets
+          
+          # Copy APKs
+          cp app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk release_assets/finance-ai-arm-v7a.apk || true
+          cp app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk release_assets/finance-ai-arm64-v8a.apk || true
+          cp app/build/app/outputs/flutter-apk/app-x86_64-release.apk release_assets/finance-ai-x86_64.apk || true
+          
+          # Create web archive
+          cd app/build/web
+          zip -r ../../../release_assets/finance-ai-web.zip .
+          cd ../../..
+          
+          ls -lh release_assets/
+
+      - name: 🏷️ Create Git Tag
+        run: |
+          NEW_VERSION="${{ steps.get_tag.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a $NEW_VERSION -m "Release $NEW_VERSION"
+          git push origin $NEW_VERSION
+
+      - name: 🚀 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_tag.outputs.new_version }}
+          name: Finance AI ${{ steps.get_tag.outputs.new_version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            release_assets/*.apk
+            release_assets/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📢 Summary
+        run: |
+          echo "## ✅ Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ steps.get_tag.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_tag.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,94 @@
+name: Dependency Check & Update
+
+on:
+  schedule:
+    # Chạy vào 2h sáng thứ 2 hàng tuần (UTC)
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check-dependencies:
+    name: 🔍 Check Outdated Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.5.0'
+
+      - name: 📦 Check Flutter App Dependencies
+        working-directory: ./app
+        run: |
+          echo "## Flutter App Dependencies" >> $GITHUB_STEP_SUMMARY
+          flutter pub outdated >> $GITHUB_STEP_SUMMARY || true
+
+      - name: 📦 Check Core Domain Dependencies
+        working-directory: ./packages/core_domain
+        run: |
+          echo "## Core Domain Dependencies" >> $GITHUB_STEP_SUMMARY
+          dart pub outdated >> $GITHUB_STEP_SUMMARY || true
+
+      - name: 📦 Check Transaction Service Dependencies
+        working-directory: ./microservices/transaction_service
+        run: |
+          echo "## Transaction Service Dependencies" >> $GITHUB_STEP_SUMMARY
+          dart pub outdated >> $GITHUB_STEP_SUMMARY || true
+
+      - name: 📦 Check Chatbot Service Dependencies
+        working-directory: ./microservices/chatbot_service
+        run: |
+          echo "## Chatbot Service Dependencies" >> $GITHUB_STEP_SUMMARY
+          dart pub outdated >> $GITHUB_STEP_SUMMARY || true
+
+  security-scan:
+    name: 🔒 Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+
+      - name: 🔍 Run Security Audit (Flutter App)
+        working-directory: ./app
+        continue-on-error: true
+        run: |
+          flutter pub get
+          dart pub audit
+
+      - name: 🔍 Run Security Audit (Microservices)
+        working-directory: ./microservices/transaction_service
+        continue-on-error: true
+        run: |
+          dart pub get
+          dart pub audit
+
+      - name: 🐳 Scan Docker Images for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: './microservices'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: 📤 Upload Trivy Results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

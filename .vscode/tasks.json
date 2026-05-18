@@ -1,0 +1,199 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🐳 Start All Services (Docker)",
+      "type": "shell",
+      "command": "docker-compose up -d",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🛑 Stop All Services (Docker)",
+      "type": "shell",
+      "command": "docker-compose down",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔄 Restart Services (Docker)",
+      "type": "shell",
+      "command": "docker-compose restart",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📋 View Docker Logs (All)",
+      "type": "shell",
+      "command": "docker-compose logs -f",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "📋 View Logs: Transaction Service",
+      "type": "shell",
+      "command": "docker-compose logs -f transaction_service",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "📋 View Logs: Chatbot Service",
+      "type": "shell",
+      "command": "docker-compose logs -f chatbot_service",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "🔨 Rebuild Transaction Service",
+      "type": "shell",
+      "command": "docker-compose up -d --build --no-deps transaction_service",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔨 Rebuild Chatbot Service",
+      "type": "shell",
+      "command": "docker-compose up -d --build --no-deps chatbot_service",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧪 Test: Transaction Service",
+      "type": "shell",
+      "command": "dart test",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices/transaction_service"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "🔍 Analyze: Transaction Service",
+      "type": "shell",
+      "command": "dart analyze",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices/transaction_service"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 Analyze: Flutter App",
+      "type": "shell",
+      "command": "flutter analyze",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📦 Get Dependencies: All",
+      "type": "shell",
+      "command": "flutter pub get && cd ../packages/core_domain && dart pub get && cd ../../microservices/transaction_service && dart pub get && cd ../chatbot_service && dart pub get",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🧹 Clean Docker (Remove All)",
+      "type": "shell",
+      "command": "docker-compose down -v && docker system prune -f",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🌐 Build Flutter Web",
+      "type": "shell",
+      "command": "flutter build web --release --web-renderer canvaskit",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🤖 Build Android APK",
+      "type": "shell",
+      "command": "flutter build apk --release --split-per-abi",
+      "options": {
+        "cwd": "${workspaceFolder}/app"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔧 Run Transaction Service (Local)",
+      "type": "shell",
+      "command": "dart run bin/server.dart",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices/transaction_service",
+        "env": {
+          "PORT": "8080",
+          "HOST": "0.0.0.0"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "💬 Run Chatbot Service (Local)",
+      "type": "shell",
+      "command": "dart run bin/server.dart",
+      "options": {
+        "cwd": "${workspaceFolder}/microservices/chatbot_service",
+        "env": {
+          "PORT": "3002",
+          "HOST": "0.0.0.0"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
