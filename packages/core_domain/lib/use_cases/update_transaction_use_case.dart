@@ -3,9 +3,6 @@ import 'package:core_domain/repositories/i_transaction_repository.dart';
 
 /// [UpdateTransactionUseCase] — Xử lý logic cập nhật giao dịch.
 ///
-/// Nhận vào entity đã có (với syncId hoặc localId), áp dụng thay đổi
-/// và ghi lại timestamp `updatedAt` đúng thời điểm — đảm bảo
-/// logic đồng bộ Cloud-Local luôn nhất quán.
 class UpdateTransactionUseCase {
   final ITransactionRepository _repository;
 
@@ -40,8 +37,8 @@ class UpdateTransactionUseCase {
       categoryIconCode: categoryIconCode,
       categoryColorHex: categoryColorHex,
       note: note?.trim().isEmpty == true ? null : note?.trim(),
-      updatedAt: DateTime.now(), // Bắt buộc cập nhật timestamp
-      isSynced: false,           // Đánh dấu cần sync lại
+      updatedAt: DateTime.now().toUtc(),
+      isSynced: false,
     );
 
     await _repository.updateTransaction(updated);

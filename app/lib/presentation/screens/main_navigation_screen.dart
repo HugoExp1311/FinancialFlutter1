@@ -9,12 +9,15 @@ import 'profile_screen.dart';
 import 'add_transaction_screen.dart';
 import 'chatbot_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../providers/language_provider.dart';
+import '../utils/app_translations.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
   const MainNavigationScreen({super.key});
 
   @override
-  ConsumerState<MainNavigationScreen> createState() => _MainNavigationScreenState();
+  ConsumerState<MainNavigationScreen> createState() =>
+      _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
@@ -30,11 +33,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Vừa vào App chính (Sau khi Login xong), gọi Kéo dữ liệu đám mây về ngay lần đầu
+    // Sync lần đầu khi vào màn chính
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(transactionRepositoryProvider).syncAll();
 
-      // Bật "Mắt Mạng" (Realtime Subscription) để giám sát kho dữ liệu của Supabase
+      // Lắng nghe realtime từ Supabase (web/thiết bị khác cập nhật -> app tự sync)
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         Supabase.instance.client
@@ -42,8 +45,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             .stream(primaryKey: ['sync_id'])
             .eq('user_id', user.id)
             .listen((event) {
-          // Ngay khi có bất kỳ ai (Dù là Web, n8n, hay thiết bị khác) đổi Data trên mây,
-          // Bắt App tự động đồng bộ lại Local Isar để nảy số trên màn hình ngay lập tức!
           ref.read(transactionRepositoryProvider).syncAll();
         });
       }
@@ -52,8 +53,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = ref.watch(languageProvider);
     return Scaffold(
-      // Sử dụng IndexedStack để giữ State của các màn hình khi chuyển đổi tab
       body: Stack(
         children: [
           IndexedStack(index: _currentIndex, children: _screens),
@@ -65,7 +66,9 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ChatbotScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const ChatbotScreen(),
+                  ),
                 );
               },
               backgroundColor: AppTheme.incomeColor,
@@ -79,17 +82,13 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           ),
         ],
       ),
-      // Imports in top section handled automatically by linter if missing, but let's replace the FAB block directly
-      // Floating Action Button lơ lửng ở giữa (Dành riêng cho tính năng cốt lõi: Thêm giao dịch)
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Push popup màn hình Add Transaction từ mạn dưới lên
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddTransactionScreen(),
-              fullscreenDialog:
-                  true, // Xài dạng Fullscreen Dialog cho nó xịn xò
+              fullscreenDialog: true,
             ),
           );
         },
@@ -100,7 +99,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         child: const Icon(Icons.add, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      // Thanh Navigation tùy chỉnh Bo tròn theo Material 3
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           splashColor: Colors.transparent,
@@ -108,7 +106,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
         ),
         child: BottomAppBar(
           color: Theme.of(context).cardTheme.color,
-          surfaceTintColor: Colors.transparent, // Sửa lỗi ám nền trắng của M3
+          surfaceTintColor: Colors.transparent, // fix lỗi ám nền M3
           shadowColor: Colors.black.withValues(alpha: 0.5),
           shape: const CircularNotchedRectangle(),
           notchMargin: 8,
@@ -118,15 +116,27 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildNavItem(Icons.home_rounded, 0, 'Home'),
-                _buildNavItem(Icons.bar_chart_rounded, 1, 'Stats'),
-                const SizedBox(width: 48), // Chừa không gian cho nút FAB ở giữa
+                _buildNavItem(
+                  Icons.home_rounded,
+                  0,
+                  AppTranslations.getText(lang, 'home'),
+                ),
+                _buildNavItem(
+                  Icons.bar_chart_rounded,
+                  1,
+                  AppTranslations.getText(lang, 'statistics'),
+                ),
+                const SizedBox(width: 48),
                 _buildNavItem(
                   Icons.account_balance_wallet_rounded,
                   2,
-                  'Wallet',
+                  AppTranslations.getText(lang, 'wallet'),
                 ),
-                _buildNavItem(Icons.person_rounded, 3, 'Profile'),
+                _buildNavItem(
+                  Icons.person_rounded,
+                  3,
+                  AppTranslations.getText(lang, 'profile'),
+                ),
               ],
             ),
           ),

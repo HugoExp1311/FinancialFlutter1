@@ -1,0 +1,238 @@
+name: Finance AI - CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.24.0'
+  DART_VERSION: '3.5.0'
+
+jobs:
+  # ============================================
+  # JOB 1: Lint & Analyze Flutter App
+  # ============================================
+  analyze-flutter:
+    name: 🔍 Analyze Flutter Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Flutter Dependencies
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: 📦 Get Core Domain Dependencies
+        working-directory: ./packages/core_domain
+        run: dart pub get
+
+      - name: 🔍 Run Flutter Analyze
+        working-directory: ./app
+        run: flutter analyze --no-fatal-infos
+
+      - name: ✅ Check Formatting
+        working-directory: ./app
+        run: dart format --set-exit-if-changed lib/
+
+  # ============================================
+  # JOB 2: Build Flutter Web
+  # ============================================
+  build-web:
+    name: 🌐 Build Flutter Web
+    runs-on: ubuntu-latest
+    needs: analyze-flutter
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Dependencies
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: 🔨 Build Web (Release)
+        working-directory: ./app
+        run: flutter build web --release --web-renderer canvaskit
+
+      - name: 📤 Upload Web Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: app/build/web/
+          retention-days: 7
+
+  # ============================================
+  # JOB 3: Build Android APK
+  # ============================================
+  build-android:
+    name: 🤖 Build Android APK
+    runs-on: ubuntu-latest
+    needs: analyze-flutter
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Get Dependencies
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: 🔨 Build APK (Release)
+        working-directory: ./app
+        run: flutter build apk --release --split-per-abi
+
+      - name: 📤 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: app/build/app/outputs/flutter-apk/*.apk
+          retention-days: 7
+
+  # ============================================
+  # JOB 4: Test Microservices (Dart)
+  # ============================================
+  test-microservices:
+    name: 🧪 Test Microservices
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🎯 Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ env.DART_VERSION }}
+
+      - name: 📦 Get Transaction Service Dependencies
+        working-directory: ./microservices/transaction_service
+        run: dart pub get
+
+      - name: 📦 Get Chatbot Service Dependencies
+        working-directory: ./microservices/chatbot_service
+        run: dart pub get
+
+      - name: 🔍 Analyze Transaction Service
+        working-directory: ./microservices/transaction_service
+        run: dart analyze --fatal-infos
+
+      - name: 🔍 Analyze Chatbot Service
+        working-directory: ./microservices/chatbot_service
+        run: dart analyze --fatal-infos
+
+  # ============================================
+  # JOB 5: Build Docker Images
+  # ============================================
+  build-docker:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [test-microservices]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔨 Build Transaction Service Image
+        working-directory: ./microservices
+        run: |
+          docker build -f transaction_service/Dockerfile -t finance-transaction-service:latest ..
+
+      - name: 🔨 Build Chatbot Service Image
+        working-directory: ./microservices
+        run: |
+          docker build -f chatbot_service/Dockerfile -t finance-chatbot-service:latest .
+
+      - name: ✅ Verify Images
+        run: |
+          docker images | grep finance
+
+  # ============================================
+  # JOB 6: Integration Test (Docker Compose)
+  # ============================================
+  integration-test:
+    name: 🧪 Integration Test
+    runs-on: ubuntu-latest
+    needs: [build-docker]
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Create Test Environment File
+        run: |
+          cat > app/.env << EOF
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          ARCHITECTURE_MODE=microservices
+          MICROSERVICE_URL=http://localhost:3000
+          EOF
+
+      - name: 🚀 Start Services with Docker Compose
+        working-directory: ./microservices
+        run: |
+          docker-compose up -d
+          sleep 10
+
+      - name: 🔍 Check Services Health
+        run: |
+          curl -f http://localhost:3000/health || exit 1
+          docker-compose -f microservices/docker-compose.yml ps
+
+      - name: 🛑 Stop Services
+        working-directory: ./microservices
+        if: always()
+        run: docker-compose down
+
+  # ============================================
+  # JOB 7: Cleanup Old Artifacts
+  # ============================================
+  cleanup:
+    name: 🧹 Cleanup
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    if: always()
+    
+    steps:
+      - name: 🗑️ Delete Old Workflow Runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 5

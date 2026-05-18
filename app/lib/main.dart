@@ -5,10 +5,10 @@ import 'presentation/screens/auth_gate.dart';
 import 'presentation/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:app/data/models/app_transaction.dart';
-import 'package:app/data/models/app_user_profile.dart';
 import 'presentation/providers/app_providers.dart';
+import 'package:app/data/models/app_wallet.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,11 +16,11 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Resize window on Desktop for mobile-like preview
+  // Resize cửa sổ trên window
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(430, 932), // Kích thước iPhone 14 Pro Max
+      size: Size(430, 932),
       minimumSize: Size(380, 800),
       center: true,
       backgroundColor: Colors.transparent,
@@ -33,20 +33,22 @@ Future<void> main() async {
     });
   }
 
-  // Load environment variables from .env file
   await dotenv.load(fileName: ".env");
 
-  // Khởi tạo Supabase Client
+  // khởi tạo Supabase Client
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
 
-  // Khởi tạo Isar
+  // khởi tạo Isar
   final dir = await getApplicationDocumentsDirectory();
   final isar = await Isar.open(
-    [AppTransactionSchema, AppUserProfileSchema], 
-    directory: dir.path,
+    [
+      AppTransactionSchema, 
+      AppWalletSchema, 
+    ], 
+    directory: dir.path
   );
 
   runApp(
@@ -67,7 +69,7 @@ class FinanceApp extends StatelessWidget {
       title: 'Finance Manager',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system, // Tự động theo hệ thống
+      themeMode: ThemeMode.system,
       home: const AuthGate(),
     );
   }

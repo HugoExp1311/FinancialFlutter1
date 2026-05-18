@@ -1,14 +1,12 @@
-// core_domain — Infrastructure-agnostic business logic.
-// Cả Monolith và Microservices đều phụ thuộc vào package này.
-// Package này KHÔNG phụ thuộc vào Isar, Supabase, http, hay Flutter widgets.
+/// Thư viện chứa logic nghiệp vụ cốt lõi (Domain Layer).
+/// Định nghĩa các thực thể, interface repository và các quy trình xử lý (Use Cases).
 
 // --- Entities ---
 export 'entities/transaction_entity.dart';
-export 'entities/user_profile_entity.dart';
+export 'entities/wallet_entity.dart';
 
-// --- Repository Interfaces (Contracts) ---
+// --- Repository Interfaces ---
 export 'repositories/i_transaction_repository.dart';
-export 'repositories/i_user_profile_repository.dart';
 
 // --- Use Cases ---
 export 'use_cases/add_transaction_use_case.dart';

@@ -1,0 +1,73 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🐦 Flutter App (Chrome)",
+      "type": "dart",
+      "request": "launch",
+      "program": "app/lib/main.dart",
+      "cwd": "${workspaceFolder}/app",
+      "args": [
+        "--web-renderer",
+        "canvaskit"
+      ]
+    },
+    {
+      "name": "🤖 Flutter App (Windows)",
+      "type": "dart",
+      "request": "launch",
+      "program": "app/lib/main.dart",
+      "cwd": "${workspaceFolder}/app"
+    },
+    {
+      "name": "🔧 Transaction Service (Debug)",
+      "type": "dart",
+      "request": "launch",
+      "program": "microservices/transaction_service/bin/server.dart",
+      "cwd": "${workspaceFolder}/microservices/transaction_service",
+      "env": {
+        "PORT": "8080",
+        "HOST": "0.0.0.0",
+        "SUPABASE_URL": "${env:SUPABASE_URL}",
+        "SUPABASE_ANON_KEY": "${env:SUPABASE_ANON_KEY}"
+      },
+      "console": "terminal"
+    },
+    {
+      "name": "💬 Chatbot Service (Debug)",
+      "type": "dart",
+      "request": "launch",
+      "program": "microservices/chatbot_service/bin/server.dart",
+      "cwd": "${workspaceFolder}/microservices/chatbot_service",
+      "env": {
+        "PORT": "3002",
+        "HOST": "0.0.0.0",
+        "N8N_WEBHOOK_URL": "https://n8n.vault.io.vn/webhook/ai-chat"
+      },
+      "console": "terminal"
+    },
+    {
+      "name": "🧪 Test: Transaction Service",
+      "type": "dart",
+      "request": "launch",
+      "program": "microservices/transaction_service/test/",
+      "cwd": "${workspaceFolder}/microservices/transaction_service"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "🚀 Full Stack (App + Services)",
+      "configurations": [
+        "🐦 Flutter App (Chrome)",
+        "🔧 Transaction Service (Debug)",
+        "💬 Chatbot Service (Debug)"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "fullstack",
+        "order": 1
+      }
+    }
+  ]
+}
