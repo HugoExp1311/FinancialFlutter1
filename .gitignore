@@ -121,3 +121,5 @@ app.*.symbols
 # Env variables
 .env
 
+/docs
+Techstack.md

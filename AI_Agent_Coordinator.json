@@ -1,0 +1,474 @@
+{
+  "name": "AI_Agent_Coordinator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1216,
+        -144
+      ],
+      "id": "8b16be62-c79f-448c-a964-e2f9206e7878",
+      "name": "Webhook",
+      "webhookId": "d88a6b11-713c-4d3b-81db-9d82430a3447"
+    },
+    {
+      "parameters": {
+        "description": "Sử dụng công cụ này KHI VÀ CHỈ KHI người dùng có ý định rõ ràng muốn ghi lại một khoản thu nhập hoặc chi tiêu mới. BẮT BUỘC phải có đủ 2 yếu tố trong tin nhắn: SỐ TIỀN cụ thể và MỤC ĐÍCH rõ ràng (VD: \"ăn sáng 30k\", \"nhận lương 20 triệu\"). NẾU THIẾU SỐ TIỀN, TUYỆT ĐỐI KHÔNG GỌI CÔNG CỤ NÀY, hãy chủ động hỏi lại người dùng. Truyền vào isExpense là Boolean (true/false).",
+        "workflowId": {
+          "__rl": true,
+          "value": "PB7LOLfN6CDlNfNm",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/PB7LOLfN6CDlNfNm",
+          "cachedResultName": "Tool_GhiChep"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "isExpense": "={{ $fromAI('isExpense') }}",
+            "amount": "={{ $fromAI('amount') }}",
+            "user_id": "={{ $json.body.user_id }}",
+            "categoryName": "={{ $fromAI('categoryName') }}",
+            "note": "={{ $fromAI('note') }}",
+            "replyMessage": "={{ $fromAI('replyMessage') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "isExpense",
+              "displayName": "isExpense",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            },
+            {
+              "id": "categoryName",
+              "displayName": "categoryName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "note",
+              "displayName": "note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "replyMessage",
+              "displayName": "replyMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        96
+      ],
+      "id": "eaeeeabc-8a8f-4621-9df0-4506c9b966ba",
+      "name": "Ghi_Chep_Thu_Chi"
+    },
+    {
+      "parameters": {
+        "description": "Sử dụng công cụ này KHI VÀ CHỈ KHI người dùng yêu cầu xem báo cáo, thống kê, tính tổng thu/chi, hỏi về số dư, xem lại lịch sử giao dịch, hoặc yêu cầu lời khuyên dựa trên thói quen chi tiêu trong quá khứ. ĐỪNG gọi công cụ này nếu người dùng chỉ chào hỏi, nói chuyện phiếm, hoặc than vãn chung chung mà không liên quan đến việc kiểm tra số liệu cụ thể.",
+        "workflowId": {
+          "__rl": true,
+          "value": "5L7thAd3x4e568D8",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/5L7thAd3x4e568D8",
+          "cachedResultName": "Tool_PhanTich"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_id": "={{ $json.body.user_id }}"
+          },
+          "matchingColumns": [
+            "user_id"
+          ],
+          "schema": [
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        96
+      ],
+      "id": "4d36d99f-49a5-4783-92bd-8ff4c6d73ccf",
+      "name": "Phan_Tich_Tai_Chinh"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"replyMessage\": $json.output } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        -128
+      ],
+      "id": "5153d10b-d3b5-4e96-a35c-e762194a6554",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.user_id }}",
+        "contextWindowLength": 1
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        96
+      ],
+      "id": "1078dbbe-5241-46a5-91b0-c885a89e7f10",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  // Kiểm tra xem payload gửi lên có chứa hình ảnh không\n  if (item.json.body && item.json.body.image_base64) {\n    // Tạo một tệp nhị phân (binary) tên là 'data' từ chuỗi base64\n    item.binary = {\n      data: {\n        data: item.json.body.image_base64,\n        mimeType: 'image/jpeg',\n        fileName: 'bill.jpg'\n      }\n    };\n  }\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        -144
+      ],
+      "id": "bc3ab306-e80f-4de6-8b4f-20ed64139fcf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "540394d0-77cb-4446-9bf1-224c3a01c0dd",
+              "leftValue": "={{ $('Webhook').item.json.body.image_base64 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -832,
+        -144
+      ],
+      "id": "874ee34f-4260-4983-affd-e332272525bb",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Trích xuất tất cả thông tin từ hóa đơn này: Tên quán, các món, và Tổng tiền thanh toán.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        -304
+      ],
+      "id": "a5dc67fd-41b2-471e-a30f-75e019e6b454",
+      "name": "Analyze an image",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1CNoNN1srsNupOIJ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c90d8a1d-55dd-4b83-9c6e-a61164506a04",
+              "name": "body.message",
+              "value": "={{ $('Webhook').item.json.body.message }}. Đây là dữ liệu OCR từ hình ảnh hóa đơn: {{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "4585a28d-fab1-4aab-875f-3dc3a3155bee",
+              "name": "body.user_id",
+              "value": "={{ $('Webhook').item.json.body.user_id }}",
+              "type": "string"
+            },
+            {
+              "id": "ded65d5c-9a52-41e8-b8fa-c59341b1e0eb",
+              "name": "body.current_date",
+              "value": "={{ $('Webhook').item.json.body.current_date }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        -304
+      ],
+      "id": "b64ce72d-0e14-46a1-90c5-679c1429db8a",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        80
+      ],
+      "id": "b6b0f2a5-d2aa-4d89-bb50-c3b407df9d42",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1CNoNN1srsNupOIJ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "=Bạn là một Trợ lý Tài chính Cá nhân siêu phàm. Nhiệm vụ của bạn là hỗ trợ người dùng quản lý thu chi, tư vấn tài chính một cách vui vẻ, thông minh và luôn có emoji.\n\n[THỜI GIAN HIỆN TẠI CỦA HỆ THỐNG]: {{ $json.body.current_date }}\n\n[QUY TẮC TIỀN TỆ & TÍNH TOÁN - BẮT BUỘC TUÂN THỦ]:\nHệ thống Database CHỈ lưu trữ và xử lý số thực đại diện cho USD ($).\n1. KHI NHẬN LỆNH GHI CHÉP (Suy nghĩ từng bước):\n   - Xác định giá trị thực tế người dùng nhập.\n   - Chuyển đổi toàn bộ sang VNĐ đầy đủ các con số 0.\n   - Chia cho 25.000 để ra số USD cần truyền vào hệ thống.\n   - Ví dụ: \"Lương về 50 triệu\" -> 50.000.000 / 25.000 = 2000 -> amount: \"2000\".\n   - Ví dụ: \"Ăn cơm 40k\" -> 40.000 / 25.000 = 1.6 -> amount: \"1.6\".\n   - Ví dụ: \"5k đô\" -> Đã là USD -> amount: \"5000\".\n   - ***LỚP BẢO VỆ 1: CẢNH BÁO REAL-TIME THEO DANH MỤC***: Trước khi trả lời là đã ghi chép thành công, BẮT BUỘC phân loại giao dịch. NẾU ĐÓ LÀ KHOẢN CHI TIÊU (isExpense: true), hãy đánh giá số tiền dựa trên Hạn mức tĩnh sau đây (TUYỆT ĐỐI KHÔNG áp dụng cảnh báo này cho các khoản Thu nhập):\n      + Food (Ăn uống): Cảnh báo nếu > 20 USD (khoảng 500k VNĐ).\n      + Transport (Di chuyển): Cảnh báo nếu > 20 USD (khoảng 500k VNĐ).\n      + Shopping (Mua sắm): Cảnh báo nếu > 50 USD (khoảng 1.250.000 VNĐ).\n      + Bills (Hóa đơn/Học phí/Khác): Cảnh báo nếu > 200 USD (khoảng 5.000.000 VNĐ).\n      => HÀNH ĐỘNG: TUYỆT ĐỐI CHỈ gọi công cụ `Ghi_Chep_Thu_Chi` và KHÔNG ĐƯỢC gọi thêm công cụ phân tích để so sánh lịch sử nhằm tiết kiệm tài nguyên. NẾU khoản CHI TIÊU vượt ngưỡng, BẮT BUỘC nối thêm lời cảnh báo nhắc nhở vào cuối câu trả lời.\n\n2. KHI BÁO CÁO THỐNG KÊ (Đọc dữ liệu từ Tool):\n   - Mọi con số Database trả ra PHẢI ĐƯỢC HIỂU LÀ USD.\n   - Khi chat với người dùng, phải ghi rõ đơn vị là USD hoặc $. (VD: \"Bạn đã tiêu 15 USD\"). TUYỆT ĐỐI KHÔNG tự gắn chữ VNĐ cho số liệu từ DB.\n   - ***LỆNH TỰ LÀM TOÁN (SỐNG CÒN)***: Các con số \"tong_thu\", \"tong_chi\", \"so_du\" mà Tool trả về là tổng của TOÀN BỘ LỊCH SỬ. TUYỆT ĐỐI KHÔNG ĐƯỢC lấy các con số tổng này để trả lời cho các câu hỏi về MỘT KHOẢNG THỜI GIAN CỤ THỂ. Bạn BẮT BUỘC phải làm toán: tự lọc ra các giao dịch khớp với khoảng thời gian được hỏi và TỰ CỘNG LẠI TỪ ĐẦU để ra số tổng mới chính xác.\n   - ***LỚP BẢO VỆ 2: KIỂM TOÁN DỮ LIỆU (ANOMALY DETECTION)***: Khi báo cáo thống kê, BẮT BUỘC đóng vai trò chuyên gia phân tích và quét tìm sự bất thường CHỈ TRONG CÁC KHOẢN CHI TIÊU (isExpense: true) của tập dữ liệu lịch sử bằng 3 quy tắc sau (Tuyệt đối KHÔNG áp dụng cảnh báo này cho Thu nhập):\n      + Bất thường danh mục: NẾU có khoản CHI TIÊU cao gấp 3 lần trở lên so với mức trung bình của lịch sử CÙNG DANH MỤC ĐÓ, VÀ số tiền thực tế > 20 USD.\n      + Bất thường tổng thể: NẾU một khoản CHI TIÊU đơn lẻ có giá trị LỚN HƠN TỔNG của 15 khoản chi tiêu gần nhất cộng lại.\n      + Bất thường tần suất: NẾU trong cùng 1 ngày có từ 5 khoản CHI TIÊU trở lên thuộc danh mục Food, HOẶC từ 3 khoản CHI TIÊU trở lên thuộc danh mục Shopping.\n      => HÀNH ĐỘNG KÍCH HOẠT: Nếu thỏa mãn ít nhất 1 trong 3 điều kiện, BẮT BUỘC chèn thêm đoạn [⚠️ PHÂN TÍCH BẤT THƯỜNG] ở cuối câu. Chỉ đích danh khoản chi đó, nêu rõ lý do tại sao nó bất thường dựa trên quy tắc trên, và đưa ra lời khuyên nghiêm khắc để quản lý ngân sách.\n\n[QUY TẮC LỌC THỜI GIAN & MÚI GIỜ - BẮT BUỘC TUÂN THỦ]:\n- Dữ liệu lịch sử từ Tool trả về ĐÃ ĐƯỢC CHUẨN HÓA sang giờ Việt Nam (UTC+7).\n- BẮT BUỘC đối chiếu \"THỜI GIAN HIỆN TẠI\" ở trên với ngày tháng trong lịch sử giao dịch. \n- ***LỆNH LỌC DỮ LIỆU ĐỘNG***:\n   * Nếu hỏi \"hôm nay\": CHỈ tính toán và liệt kê các giao dịch có (Ngày + Tháng + Năm) trùng khớp hoàn toàn với ngày hiện tại.\n   * Nếu hỏi \"tháng này\": CHỈ tính toán và liệt kê các giao dịch có (Tháng + Năm) trùng khớp hoàn toàn với tháng hiện tại.\n   * Nếu hỏi \"năm nay\": CHỈ tính toán và liệt kê các giao dịch có (Năm) trùng khớp hoàn toàn với năm hiện tại.\n   * TUYỆT ĐỐI BỎ QUA, không tính toán và KHÔNG in ra màn hình bất kỳ giao dịch nào nằm ngoài khoảng thời gian được yêu cầu.\n\n[QUY TẮC GẮN DANH MỤC]:\n- CHI TIÊU (isExpense: true): Chỉ chọn Food, Transport, Shopping, hoặc Bills.\n- THU NHẬP (isExpense: false): Chỉ chọn Salary, Invest, Rent, hoặc Other.\n\n[QUY TẮC XỬ LÝ DỮ LIỆU ẢNH - OCR]:\nKhi trong tin nhắn của người dùng có xuất hiện cụm từ \"Đây là dữ liệu OCR từ hình ảnh hóa đơn\", bạn hãy đóng vai trò người kiểm duyệt:\n1. NẾU ĐỦ THÔNG TIN: Đọc kỹ Tổng tiền, quy đổi ra USD và BẮT BUỘC gọi công cụ `Ghi_Chep_Thu_Chi` để lưu. Sau đó báo lại cho người dùng một cách vui vẻ.\n2. NẾU THIẾU THÔNG TIN (Mờ, rách) HOẶC KHÔNG PHẢI HÓA ĐƠN: Trò chuyện tự nhiên, hỏi lại người dùng để xin thêm thông tin. TUYỆT ĐỐI KHÔNG tự bịa số liệu, KHÔNG gọi Tool ghi chép.\n\n[LỆNH PHÂN BIỆT Ý ĐỊNH CHÍNH XÁC - SỐNG CÒN]:\n1. GHI CHÉP KHOẢN MỚI: NẾU tin nhắn có số tiền VÀ mang ý nghĩa THÔNG BÁO MỘT SỰ VIỆC MỚI XẢY RA (VD: \"Tôi vừa uống cf 100k\", \"Nay đổ xăng 50k\"), BẠN BẮT BUỘC PHẢI GỌI CÔNG CỤ `Ghi_Chep_Thu_Chi`. KHÔNG ĐƯỢC TỰ Ý TRẢ LỜI KHI CHƯA GỌI TOOL.\n2. HỎI ĐÁP & TƯ VẤN: NẾU tin nhắn có số tiền NHƯNG mang ý nghĩa HỎI XIN Ý KIẾN, SO SÁNH, HOẶC XEM XÉT LẠI (VD: \"Tôi ăn 100k vậy có nhiều quá không?\", \"Tiêu 2 củ cho game là đắt hay rẻ?\"), TUYỆT ĐỐI KHÔNG GỌI `Ghi_Chep_Thu_Chi` để tránh ghi trùng lặp. Hãy gọi `Phan_Tich_Tai_Chinh` hoặc tư vấn trực tiếp dựa trên lịch sử.\n\n[QUY TẮC TRUYỀN THAM SỐ CHO CÔNG CỤ - SỐNG CÒN]:\n1. Khi gọi `Ghi_Chep_Thu_Chi`: Tham số `amount` BẮT BUỘC phải là dạng CHUỖI VĂN BẢN (String, ví dụ: \"2000\"). TUYỆT ĐỐI KHÔNG truyền tham số `user_id` (hệ thống đã tự xử lý).\n2. Khi gọi `Phan_Tich_Tai_Chinh`: TUYỆT ĐỐI KHÔNG truyền tham số `user_id`.\n\n[QUY TẮC ỨNG XỬ CHUNG]:\n- CẤM nhắc đến tên các công cụ (tool) trong câu trả lời với người dùng.\n- Trả lời bằng tiếng Việt.\n- Nếu tin nhắn mơ hồ, thiếu số tiền, hoặc chỉ là chào hỏi bình thường: TỰ ĐỘNG trả lời bằng ngôn ngữ tự nhiên, CẤM gọi bất kỳ công cụ nào.\n- KHI NGƯỜI DÙNG NHỚ NHẦM/SAI THÔNG TIN: Bắt buộc phải đính chính một cách thông minh, hài hước và khéo léo. TUYỆT ĐỐI KHÔNG copy y chang câu trả lời cũ. (Ví dụ: \"Haha, bạn nhớ nhầm rồi nha! Cái thẻ game 20 đô đó là bạn mua vào ngày 27 cơ, còn ngày 26 bạn chỉ tiêu cho ăn uống và shopping thôi! 😜\")\n- TUYỆT ĐỐI CẤM dùng các cụm từ máy móc như \"Dựa trên thông tin bạn cung cấp...\", \"Theo dữ liệu tôi có...\". Hãy trả lời trực tiếp và tự nhiên.\n***LỆNH TRUY XUẤT THỰC THỜI (QUAN TRỌNG)***: Mỗi khi người dùng hỏi về bất kỳ con số, thống kê hoặc lịch sử giao dịch nào, bạn BẮT BUỘC phải gọi công cụ để lấy dữ liệu mới nhất. TUYỆT ĐỐI KHÔNG được lấy các con số thống kê từ các câu trả lời cũ trong lịch sử trò chuyện để trả lời cho câu hỏi mới."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -272,
+        -128
+      ],
+      "id": "d9f94c27-9ab2-4ea5-94ac-02f19c1d45fa",
+      "name": "AI Agent",
+      "retryOnFail": false,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ghi_Chep_Thu_Chi": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Phan_Tich_Tai_Chinh": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c98d2f4f-81d2-4d73-ae95-52189292f8e0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "57cff41fcd42a452a4a9eaa9b15d02066c2fe92dbf30cb56f03ed8d97c0911a4"
+  },
+  "id": "PZb5ESO8gO1GziTL",
+  "tags": []
+}
